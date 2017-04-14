@@ -131,7 +131,7 @@ class OverlappingModel(Model):
     #    self.colors = []
     #    self.ground = 0
         
-    def __init__(self, width, height, name, N_value, periodic_input_value, periodic_output_value, symmetry_value, ground_value):
+    def __init__(self, width, height, name, N_value = 2, periodic_input_value = True, periodic_output_value = False, symmetry_value = 8, ground_value = 0):
         super( OverlappingModel, self).__init__(width, height)
         self.propogator = [[[[]]]]
         self.N = N_value
@@ -139,15 +139,21 @@ class OverlappingModel(Model):
         self.bitmap = PIL.Image.open("samples/{0}.png".format(name))
         self.SMX = self.bitmap.size[0]
         self.SMY = self.bitmap.size[1]
-        self.sample = [[0] * self.SMX] * self.SMY
+        self.sample = [[0] * self.SMY] * self.SMX
         self.colors = []
-        for x in range(0, self.SMX):
-            for y in range(0, self.SMY):
+        for y in range(0, self.SMY):
+            for x in range(0, self.SMX):
                 a_color = self.bitmap.getpixel((x, y))
                 color_exists = [c for c in self.colors if c == a_color]
                 if len(color_exists) < 1:
                     self.colors.append(a_color)
-                self.sample[x][y] = (i for i,v in enumerate(self.colors) if v == a_color)
+                #print("{0}, {1}, {2}, {3}".format(x, y, self.SMX, self.SMY))
+                samp_result = [i for i,v in enumerate(self.colors) if v == a_color]
+                self.sample[x][y] = samp_result
+                #for i, v in enumerate(self.colors): 
+                #    if v == a_color:
+                #        print("{0}, {1}: {2} -> {3}\t\t= {4}".format(x, y, i, v, self.sample[x][y]))
+                
         self.color_count = len(self.colors)
         self.W = StuffPower(self.color_count, self.N * self.N)
         
@@ -155,24 +161,26 @@ class OverlappingModel(Model):
         self.ground = 0
         
         def FuncPattern(passed_func):
-            result = [None] * (self.N * self.N)
+            result = [0] * (self.N * self.N)
             for y in range(0, self.N):
                 for x in range(0, self.N):
                     result[x + (y * self.N)] = passed_func(x, y)
             return result
             
         def PatternFromSample(x, y):
-            FuncPattern(lambda dx, dy: self.sample[(x + dx) % self.SMX, (y + dy) % self.SMY])
+            def innerPattern(dx, dy):
+                return self.sample[(x + dx) % self.SMX][(y + dy) % self.SMY]
+            return FuncPattern(innerPattern)
         def Rotate(p):
-            FuncPattern(lambda x, y: p[self.N - 1 - y + x * self.N])
+            return FuncPattern(lambda x, y: p[self.N - 1 - y + x * self.N])
         def Reflect(p):
-            FuncPattern(lambda x, y: p[self.N - 1 - x + y * self.N])
+            return FuncPattern(lambda x, y: p[self.N - 1 - x + y * self.N])
             
         def Index(p):
             result = 0
             power = 1
             for i in range(0, len(p)):
-                result = result + (p[len(p) - 1 - i] * power)
+                result = result + (p[len(p) - 1 - i] * power)[0]
                 power = power * self.color_count
             return result
                                     
@@ -200,7 +208,7 @@ class OverlappingModel(Model):
             xlimit = self.SMX
         for y in range (0, ylimit):
             for x in range(0, xlimit):
-                ps = [[None] * 8]
+                ps = [0] * 8
                 ps[0] = PatternFromSample(x,y)
                 ps[1] = Reflect(ps[0])
                 ps[2] = Rotate(ps[0])
@@ -220,9 +228,9 @@ class OverlappingModel(Model):
         self.T = len(self.weights)
         self.ground = (self.ground + self.T) % self.T
         
-        self.patterns = [[None] * self.T]
+        self.patterns = [[None]] * self.T
         self.stationary = [None] * self.T
-        self.propogator = [[[[0] * (2 * self.N - 1)]]]
+        self.propogator = [[[[0]]]] * (2 * self.N - 1)
         
         counter = 0
         for w in self.ordering:
@@ -250,17 +258,20 @@ class OverlappingModel(Model):
                     if p1[x + self.N * y] != p2[x - dx + self.N * (y - dy)]:
                         return False
             return True
-                                                        
+
         for x in range(0, 2 * self.N - 1):
-            self.propogator[x] = [[[0] * (2 * self.N - 1)]]
-            for t in range(0, self.T):
-                a_list = []
-                for t2 in range(0, self.T):
-                    if Agrees(self.patterns[t], self.patterns[t2], x - self.N + 1, y - self.N + 1):
-                        a_list.append(t2)
-                self.propogator[x][y][t] = [0] * len(a_list)
-                for c in range(0, len(a_list)):
-                    self.propogator[x][y][t][c] = a_list[c]
+            self.propogator[x] = [[[0]]] * (2 * self.N - 1)
+            for y in range(0, 2 * self.N - 1):
+                self.propogator[x][y] = [[0]] * self.T
+                                  
+                for t in range(0, self.T):
+                    a_list = []
+                    for t2 in range(0, self.T):
+                        if Agrees(self.patterns[t], self.patterns[t2], x - self.N + 1, y - self.N + 1):
+                            a_list.append(t2)
+                    self.propogator[x][y][t] = [0] * len(a_list)
+                    for c in range(0, len(a_list)):
+                        self.propogator[x][y][t][c] = a_list[c]
                     
     def OnBoundary(self, x, y):
         return (not self.periodic) and ((x + self.N > self.fmodel_x ) or (y + self.N > self.fmodel_y))
@@ -424,6 +435,11 @@ def StuffGet(xml_node, xml_attribute, default_t):
         return default_t
     return s
     
+def string2bool(strn):
+    if isinstance(strn, bool):
+        return strn
+    return strn.lower() in ["true"]
+    
 class Program:
     def __init__(self):
         pass
@@ -441,7 +457,7 @@ class Program:
             print("< {0} ".format(name))
             if "overlapping" == xnode.tag:
                 print(xnode.attrib)
-                a_model = OverlappingModel(xnode.get('width', 48), xnode.get('height', 48), xnode.get('name', "NAME"), xnode.get('N', 2), xnode.get('periodicInput', True), xnode.get('periodic', False), xnode.get('symmetry', 8), xnode.get('ground',0))
+                a_model = OverlappingModel(int(xnode.get('width', 48)), int(xnode.get('height', 48)), xnode.get('name', "NAME"), int(xnode.get('N', 2)), string2bool(xnode.get('periodicInput', True)), string2bool(xnode.get('periodic', False)), int(xnode.get('symmetry', 8)), int(xnode.get('ground',0)))
                 pass
             else:
                 if "simpletiled" == xnode.tag:
@@ -453,3 +469,5 @@ class Program:
             #print(xnode.attrib)
         pass
     
+prog = Program()    
+prog.Main()
