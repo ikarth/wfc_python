@@ -14,16 +14,16 @@ class Model:
         self.stationary = []
                 
 
-        self.fmodel_x = width
-        self.fmodel_y = height
+        self.FMX = width
+        self.FMY = height
         self.T = 3
         #self.limit = 0
         
         self.rng = random.Random() #todo: set rng
 
-        self.wave = [[[False]* self.T]*self.fmodel_y]*self.fmodel_x
-        self.changes = [[False]*self.fmodel_y]*self.fmodel_x
-        self.observed = None#[[None]*self.fmodel_y]*self.fmodel_x
+        self.wave = [[[False]* self.T]*self.FMY]*self.FMX
+        self.changes = [[False]*self.FMY]*self.FMX
+        self.observed = None#[[None]*self.FMY]*self.FMX
 
         self.log_prob = 0
         self.log_t = 0
@@ -41,8 +41,8 @@ class Model:
         amount = 0
         w = []
         
-        for x in range(0, self.fmodel_x):
-            for y in range(0, self.fmodel_y):
+        for x in range(0, self.FMX):
+            for y in range(0, self.FMY):
                 if self.onBoundary(x,y):
                     continue
                 w = self.wave[x][y]
@@ -72,9 +72,9 @@ class Model:
                     argminx = x
                     argminy = y
         if (-1 == argminx) and (-1 == argminy):
-            self.observed = [[None]*self.fmodel_y]*self.fmodel_x
-            for x in range(0, self.fmodel_x):
-                for y in range(0, self.fmodel_y):
+            self.observed = [[None]*self.FMY]*self.FMX
+            for x in range(0, self.FMX):
+                for y in range(0, self.FMY):
                     for t in range(0, self.T):
                         if self.wave[x][y][t]:
                             self.observed[x][y] = t
@@ -113,8 +113,8 @@ class Model:
         return False
         
     def Clear(self):
-        for x in range(0,self.fmodel_x):
-            for y in range(0, self.fmodel_y):
+        for x in range(0,self.FMX):
+            for y in range(0, self.FMY):
                 for t in range(0, self.T):
                     self.wave[x][y][t] = True
                     self.changes[x][y] = False
@@ -124,7 +124,7 @@ class Model:
         return True # Abstract, replaced in child classes
         
     def Graphics(self):
-        return PIL.Image.new("RGB",(self.fmodel_x, self.fmodel_y),(0,0,0))
+        return PIL.Image.new("RGB",(self.FMX, self.FMY),(0,0,0))
     
 class OverlappingModel(Model):
     #def __init__(self, width, height):
@@ -242,8 +242,8 @@ class OverlappingModel(Model):
             self.stationary[counter] = self.weights[w]
             counter += 1
             
-        for x in range(0, self.fmodel_x):
-            for y in range(0, self.fmodel_y):
+        for x in range(0, self.FMX):
+            for y in range(0, self.FMY):
                 self.wave[x][y] = [False] * self.T
                 
         def Agrees(p1, p2, dx, dy):
@@ -278,7 +278,7 @@ class OverlappingModel(Model):
                         self.propogator[x][y][t][c] = a_list[c]
                     
     def OnBoundary(self, x, y):
-        return (not self.periodic) and ((x + self.N > self.fmodel_x ) or (y + self.N > self.fmodel_y))
+        return (not self.periodic) and ((x + self.N > self.FMX ) or (y + self.N > self.FMY))
     
     def Propogate(self):
         change = False
@@ -286,25 +286,25 @@ class OverlappingModel(Model):
         
         x2 = None
         y2 = None
-        for x1 in range(0, self.fmodel_x):
-            for y1 in range(0, self.fmodel_y):
+        for x1 in range(0, self.FMX):
+            for y1 in range(0, self.FMY):
                 if (self.changes[x1][y1]):
                     self.changes[x1][y1] = False
                     for dx in range(1 - self.N, self.N):
                         for dy in range(1 - self.N, self.N):
                             x2 = x1 + dx
                             if x2 < 0:
-                                x2 += self.fmodel_x
+                                x2 += self.FMX
                             else:
-                                if x2 >= self.fmodel_x:
-                                    x2 -= self.fmodel_x
+                                if x2 >= self.FMX:
+                                    x2 -= self.FMX
                             y2 = y1 + dy
                             if y2 < 0:
-                                y2 += self.fmodel_y
+                                y2 += self.FMY
                             else:
-                                if y2 >= self.fmodel_y:
-                                    y2 -= self.fmodel_y
-                            if (not self.periodic) and (x2 + self.N > self.fmodel_x or y2 + self.N > self.fmodel_y):
+                                if y2 >= self.FMY:
+                                    y2 -= self.FMY
+                            if (not self.periodic) and (x2 + self.N > self.FMX or y2 + self.N > self.FMY):
                                 continue
                             
                             w1 = self.wave[x1][y1]
@@ -329,29 +329,29 @@ class OverlappingModel(Model):
         return change
         
     def Graphics(self):
-        result = PIL.Image.new("RGB",(self.fmodel_x, self.fmodel_y),(0,0,0))
+        result = PIL.Image.new("RGB",(self.FMX, self.FMY),(0,0,0))
         bitmap_data = list(result.getdata())#[None] * (result.height * result.width)
         if(self.observed != None):
-            for y in range(0, self.fmodel_y):
+            for y in range(0, self.FMY):
                 dy = 0
-                if not (y < self.fmodel_y - self.N + 1):
+                if not (y < self.FMY - self.N + 1):
                     dy = self.N - 1
-                for x in range(0, self.fmodel_x):
+                for x in range(0, self.FMX):
                     dx = 0
-                    if not (x < self.fmodel_x - self.N + 1):
+                    if not (x < self.FMX - self.N + 1):
                         dx = self.N - 1
                     local_obsv = self.observed[x - dx][y - dy]
                     local_patt = self.patterns[local_obsv][dx + dy * self.N]
                     c = self.colors[local_patt]
-                    #bitmap_data[x + y * self.fmodel_x] = (0xff000000 | (c.R << 16) | (c.G << 8) | c.B)
+                    #bitmap_data[x + y * self.FMX] = (0xff000000 | (c.R << 16) | (c.G << 8) | c.B)
                     if isinstance(c, (int, float)):
-                        bitmap_data[x + y * self.fmodel_x] = (c, c, c)
+                        bitmap_data[x + y * self.FMX] = (c, c, c)
                     else:
-                        bitmap_data[x + y * self.fmodel_x] = (c[0], c[1], c[2])
+                        bitmap_data[x + y * self.FMX] = (c[0], c[1], c[2])
                     
         else:
-            for y in range(0, self.fmodel_y):
-                for x in range(0, self.fmodel_x):
+            for y in range(0, self.FMY):
+                for x in range(0, self.FMX):
                     contributors = 0
                     r = 0
                     g = 0
@@ -360,10 +360,10 @@ class OverlappingModel(Model):
                         for dx in range(0, self.N):
                             sx = x - dx
                             if sx < 0:
-                                sx += self.fmodel_x
+                                sx += self.FMX
                             sy = y - dy
                             if sy < 0:
-                                sy += self.fmodel_y
+                                sy += self.FMY
                             if (self.OnBoundary(sx, sy)):
                                 continue
                             for t in range(0, self.T):
@@ -378,21 +378,21 @@ class OverlappingModel(Model):
                                         r += int(color[0])#.R
                                         g += int(color[1])#.G
                                         b += int(color[2])#.B
-                    #bitmap_data[x + y * self.fmodel_x] = (0xff000000 | ((r / contributors) << 16) | ((g / contributors) << 8) | (b / contributors))
-                    bitmap_data[x + y * self.fmodel_x] = (int(r / contributors), int(g / contributors), int(b / contributors))
+                    #bitmap_data[x + y * self.FMX] = (0xff000000 | ((r / contributors) << 16) | ((g / contributors) << 8) | (b / contributors))
+                    bitmap_data[x + y * self.FMX] = (int(r / contributors), int(g / contributors), int(b / contributors))
         result.putdata(bitmap_data)
         return result
         
     def Clear(self):
         super(OverlappingModel, self).Clear()
         if(self.ground != 0 ):
-            for x in range(0, self.fmodel_x):
+            for x in range(0, self.FMX):
                 for t in range(0, self.T):
                     if t != self.ground:
-                        self.wave[x][self.fmodel_x - 1][t] = False
-                    self.changes[x][self.fmodel_x - 1] = True
+                        self.wave[x][self.FMX - 1][t] = False
+                    self.changes[x][self.FMX - 1] = True
                     
-                    for y in range(0, self.fmodel_y - 1):
+                    for y in range(0, self.FMY - 1):
                         self.wave[x][y][self.ground] = False
                         self.changes[x][y] = True
             while self.Propogate():
@@ -484,7 +484,7 @@ class Program:
                 for k in range(0, 10):
                     print("> ", end="")
                     seed = self.random.random()
-                    finished = a_model.Run(seed, xnode.get("limit", 0))
+                    finished = a_model.Run(seed, int(xnode.get("limit", 0)))
                     if finished:
                         print("DONE")
                         a_model.Graphics().save("{0} {1} {2}.png".format(counter, name, i), format="PNG")
