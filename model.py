@@ -10,8 +10,7 @@ class Model:
     def __init__(self, width, height):
         #initialize
 
-        self.wave = [[[]]]
-        self.changes = [[]]
+        
         self.stationary = []
         self.observed = [[]]
 
@@ -20,9 +19,9 @@ class Model:
         self.T = 3
         #self.limit = 0
         
-        self.rng = 0 #todo: set rng
+        self.rng = random.Random() #todo: set rng
 
-        self.wave = [[[False]]*self.fmodel_x]*self.fmodel_y
+        self.wave = [[[False]* self.T]*self.fmodel_y]*self.fmodel_x
         self.changes = [[False]*self.fmodel_x]*self.fmodel_y
 
         self.log_prob = 0
@@ -53,7 +52,7 @@ class Model:
                             observed_sum += self.stationary[t]
                     if 0 == sum:
                         return False
-                noise = 1e-6 * getNextRandom()
+                noise = 1e-6 * self.rng.random()
                 if(1 == amount):
                     entropy = 0
                 else:
@@ -85,7 +84,7 @@ class Model:
                 distribution[t] = self.stationary[t]
             else:
                 distribution[t] = 0
-        r = StuffRandom(distribution, getNextRandom())
+        r = StuffRandom(distribution, self.rng.random())
         for t in range(0, self.T):
             self.wave[argminx][argminy][t] = (t == r)
         self.changes[argminx][argminy] = True
@@ -93,11 +92,12 @@ class Model:
         
     def Run(self, seed, limit):
         self.log_t = math.log(self.T)
-        self.log_prob = []*self.T
+        self.log_prob = [0]*self.T
         for t in range(0,self.T):
             self.log_prob[t] = math.log(self.stationary[t])
         self.Clear()
-        self.rng = 0 # todo: set random seed
+        self.rng = random.Random()
+        self.rng.seed(seed)
         for l in range(0,limit):
             if 0 == limit:
                 break
@@ -119,8 +119,11 @@ class Model:
                     self.changes[x][y] = False
     
                 
-    def onBoundary(x, y):
-        return True # TODO
+    def onBoundary(self, x, y):
+        return True # Abstract, replaced in child classes
+        
+    def Graphics(self):
+        return PIL.Image.new("RGB",(self.fmodel_x, self.fmodel_y),(0,0,0))
     
 class OverlappingModel(Model):
     #def __init__(self, width, height):
@@ -240,7 +243,7 @@ class OverlappingModel(Model):
             
         for x in range(0, self.fmodel_x):
             for y in range(0, self.fmodel_y):
-                self.wave[x][y] = [] * self.T
+                self.wave[x][y] = [False] * self.T
                 
         def Agrees(p1, p2, dx, dy):
             xmin = dx
@@ -370,7 +373,7 @@ class OverlappingModel(Model):
         return result
         
     def Clear(self):
-        super(OverlappingModel, self).Clear(self)
+        super(OverlappingModel, self).Clear()
         if(self.ground != 0 ):
             for x in range(0, self.fmodel_x):
                 for t in range(0, self.T):
@@ -401,8 +404,8 @@ class SimpleTiledModel(Model):
 
         
 
-def getNextRandom():
-    return random.random()
+#def getNextRandom():
+#    return random.random()
     
 def StuffRandom(source_array, random_value):
     a_sum = sum(source_array)
@@ -453,21 +456,34 @@ class Program:
                 continue
             a_model = None
             
-            name = xnode.tag
-            print("< {0} ".format(name))
+            name = xnode.get('name', "NAME")
+            print("< {0} ".format(name), end='')
             if "overlapping" == xnode.tag:
-                print(xnode.attrib)
+                #print(xnode.attrib)
                 a_model = OverlappingModel(int(xnode.get('width', 48)), int(xnode.get('height', 48)), xnode.get('name', "NAME"), int(xnode.get('N', 2)), string2bool(xnode.get('periodicInput', True)), string2bool(xnode.get('periodic', False)), int(xnode.get('symmetry', 8)), int(xnode.get('ground',0)))
                 pass
             else:
                 if "simpletiled" == xnode.tag:
-                    pass
+                    print("> ", end="\n")
+                    continue
                 else:
                     continue
-                
+            
+            for i in range(0, int(xnode.get("screenshots", 2))):
+                for k in range(0, 10):
+                    print("> ", end="")
+                    seed = self.random.random()
+                    finished = a_model.Run(seed, xnode.get("limit", 0))
+                    if finished:
+                        print("DONE")
+                        a_model.Graphics().save("{0} {1} {2}.png".format(counter, name, i), format="PNG")
+                        break
+                    else:
+                        print("CONTRADICTION")
+            counter += 1
             #print(xnode)
             #print(xnode.attrib)
-        pass
+        
     
 prog = Program()    
 prog.Main()
