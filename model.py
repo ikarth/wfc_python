@@ -4,7 +4,7 @@ import math
 import PIL
 import random
 import xml.etree.ElementTree as ET
-import array
+
 
 class Model:
     def __init__(self, width, height):
@@ -16,13 +16,13 @@ class Model:
 
         self.FMX = width
         self.FMY = height
-        self.T = 3
+        self.T = 2
         #self.limit = 0
         
         self.rng = random.Random() #todo: set rng
 
-        self.wave = [[[False]* self.T]*self.FMY]*self.FMX
-        self.changes = [[False]*self.FMY]*self.FMX
+        self.wave = [[[None for _ in range(self.T)] for _ in range(self.FMY)] for _ in range(self.FMX)]
+        self.changes = [[False for _ in range(self.FMY)] for _ in range(self.FMX)]
         self.observed = None#[[None]*self.FMY]*self.FMX
 
         self.log_prob = 0
@@ -30,57 +30,59 @@ class Model:
 
     def Observe(self):
         observed_min = 1e+3
-        observed_sum = 0
-        main_sum = 0
-        log_sum = 0
-        noise = 0
-        entropy = 0
+        observed_sum = None
+        main_sum = None
+        log_sum = None
+        noise = None
+        entropy = None
         
         argminx = -1
         argminy = -1
-        amount = 0
+        amount = None
         w = []
         
         for x in range(0, self.FMX):
             for y in range(0, self.FMY):
-                if self.onBoundary(x,y):
-                    continue
-                w = self.wave[x][y]
-                amount = 0
-                observed_sum = 0
-                for t in range(0, self.T):
-                    if w[t]:
-                        amount += 1
-                        observed_sum += self.stationary[t]
-                if 0 == sum:
-                    return False
-                noise = 1e-6 * self.rng.random()
-                if(1 == amount):
-                    entropy = 0
+                if self.OnBoundary(x,y):
+                    pass
                 else:
-                    if (self.T == amount):
-                        entropy = self.log_t
+                    w = self.wave[x][y]
+                    amount = 0
+                    observed_sum = 0
+                    for t in range(0, self.T):
+                        if True == w[t]:
+                            amount += 1
+                            observed_sum += self.stationary[t]
+                    if 0 == observed_sum:
+                        return False
+                    noise = 1e-6 * self.rng.random()
+                    if(1 == amount):
+                        entropy = 0
                     else:
-                        main_sum = 0
-                        log_sum = math.log(observed_sum)
-                        for t in range(0, self.T):
-                            if w[t]:
-                                main_sum += self.stationary[t] * self.log_prob[t]
-                            entropy = log_sum - main_sum / observed_sum
-                if ((entropy > 0) and ((entropy + noise) < observed_min)):
-                    observed_min = entropy + noise
-                    argminx = x
-                    argminy = y
+                        if (self.T == amount):
+                            entropy = self.log_t
+                        else:
+                            main_sum = 0
+                            log_sum = math.log(observed_sum)
+                            for t in range(0, self.T):
+                                if w[t]:
+                                    main_sum += self.stationary[t] * self.log_prob[t]
+                                entropy = log_sum - main_sum / observed_sum
+                    if ((entropy > 0) and ((entropy + noise) < observed_min)):
+                        observed_min = entropy + noise
+                        argminx = x
+                        argminy = y
         if (-1 == argminx) and (-1 == argminy):
-            self.observed = [[None]*self.FMY]*self.FMX
+            self.observed = [[None for _ in range(self.FMY)] for _ in range(self.FMX)]
             for x in range(0, self.FMX):
+                self.observed[x] = [None for _ in range(self.FMY)]
                 for y in range(0, self.FMY):
                     for t in range(0, self.T):
                         if self.wave[x][y][t]:
                             self.observed[x][y] = t
                             break
             return True
-        distribution = []*self.T
+        distribution = [None for _ in range(self.T)]
         for t in range(0, self.T):
             if self.wave[argminx][argminy][t]:
                 distribution[t] = self.stationary[t]
@@ -94,17 +96,25 @@ class Model:
         
     def Run(self, seed, limit):
         self.log_t = math.log(self.T)
-        self.log_prob = [0]*self.T
+        self.log_prob = [0 for _ in range(self.T)]
         for t in range(0,self.T):
             self.log_prob[t] = math.log(self.stationary[t])
         self.Clear()
         self.rng = random.Random()
         self.rng.seed(seed)
-        for l in range(0,limit + 1): # if limit == 0, then run once and stop
+        l = 0
+        while (l < limit) or (0 == limit): # if limit == 0, then don't stop
+            l += 1
+            print("Observe")
             result = self.Observe()
+            print(result)
             if None != result:
                 return result
+            pcount = 0
             while(self.Propogate()):
+                print(pcount)
+                pcount += 1
+                #print("Propogate: {0}".format(prop_val))
                 pass
         return True
             
@@ -117,10 +127,10 @@ class Model:
             for y in range(0, self.FMY):
                 for t in range(0, self.T):
                     self.wave[x][y][t] = True
-                    self.changes[x][y] = False
+                self.changes[x][y] = False
     
                 
-    def onBoundary(self, x, y):
+    def OnBoundary(self, x, y):
         return True # Abstract, replaced in child classes
         
     def Graphics(self):
@@ -143,7 +153,7 @@ class OverlappingModel(Model):
         self.bitmap = PIL.Image.open("samples/{0}.png".format(name))
         self.SMX = self.bitmap.size[0]
         self.SMY = self.bitmap.size[1]
-        self.sample = [[0] * self.SMY] * self.SMX
+        self.sample = [[0 for _ in range(self.SMY)] for _ in range(self.SMX)]
         self.colors = []
         for y in range(0, self.SMY):
             for x in range(0, self.SMX):
@@ -165,16 +175,18 @@ class OverlappingModel(Model):
         self.ground = 0
         
         def FuncPattern(passed_func):
-            result = [0] * (self.N * self.N)
+            result = [0 for _ in range(self.N * self.N)]
             for y in range(0, self.N):
                 for x in range(0, self.N):
                     result[x + (y * self.N)] = passed_func(x, y)
             return result
             
+        pattern_func = FuncPattern
+            
         def PatternFromSample(x, y):
             def innerPattern(dx, dy):
                 return self.sample[(x + dx) % self.SMX][(y + dy) % self.SMY]
-            return FuncPattern(innerPattern)
+            return pattern_func(innerPattern)
         def Rotate(p):
             return FuncPattern(lambda x, y: p[self.N - 1 - y + x * self.N])
         def Reflect(p):
@@ -192,7 +204,7 @@ class OverlappingModel(Model):
         def PatternFromIndex(ind):
             residue = ind
             power = self.W
-            result = [None] * (self.N * self.N)
+            result = [None for _ in range(self.N * self.N)]
             for i in range(0, len(result)):
                 power = power / self.color_count
                 count = 0
@@ -207,12 +219,12 @@ class OverlappingModel(Model):
         
         ylimit = self.SMY - self.N + 1
         xlimit = self.SMX - self.N + 1
-        if periodic_input_value:
+        if True == periodic_input_value:
             ylimit = self.SMY
             xlimit = self.SMX
         for y in range (0, ylimit):
             for x in range(0, xlimit):
-                ps = [0] * 8
+                ps = [0 for _ in range(8)]
                 ps[0] = PatternFromSample(x,y)
                 ps[1] = Reflect(ps[0])
                 ps[2] = Rotate(ps[0])
@@ -232,9 +244,9 @@ class OverlappingModel(Model):
         self.T = len(self.weights)
         self.ground = (self.ground + self.T) % self.T
         
-        self.patterns = [[None]] * self.T
-        self.stationary = [None] * self.T
-        self.propogator = [[[[0]]]] * (2 * self.N - 1)
+        self.patterns = [[None] for _ in range(self.T)]
+        self.stationary = [None for _ in range(self.T)]
+        self.propogator = [[[[0]]] for _ in range(2 * self.N - 1)]
         
         counter = 0
         for w in self.ordering:
@@ -244,7 +256,7 @@ class OverlappingModel(Model):
             
         for x in range(0, self.FMX):
             for y in range(0, self.FMY):
-                self.wave[x][y] = [False] * self.T
+                self.wave[x][y] = [False for _ in range(self.T)]
                 
         def Agrees(p1, p2, dx, dy):
             xmin = dx
@@ -264,16 +276,16 @@ class OverlappingModel(Model):
             return True
 
         for x in range(0, 2 * self.N - 1):
-            self.propogator[x] = [[[0]]] * (2 * self.N - 1)
+            self.propogator[x] = [[[0]] for _ in range(2 * self.N - 1)]
             for y in range(0, 2 * self.N - 1):
-                self.propogator[x][y] = [[0]] * self.T
+                self.propogator[x][y] = [[0] for _ in range(self.T)]
                                   
                 for t in range(0, self.T):
                     a_list = []
                     for t2 in range(0, self.T):
                         if Agrees(self.patterns[t], self.patterns[t2], x - self.N + 1, y - self.N + 1):
                             a_list.append(t2)
-                    self.propogator[x][y][t] = [0] * len(a_list)
+                    self.propogator[x][y][t] = [0 for _ in range(len(a_list))]
                     for c in range(0, len(a_list)):
                         self.propogator[x][y][t][c] = a_list[c]
                     
@@ -282,10 +294,10 @@ class OverlappingModel(Model):
     
     def Propogate(self):
         change = False
-        b = None
+        b = False
         
-        x2 = None
-        y2 = None
+        #x2 = None
+        #y2 = None
         for x1 in range(0, self.FMX):
             for y1 in range(0, self.FMY):
                 if (self.changes[x1][y1]):
@@ -304,6 +316,7 @@ class OverlappingModel(Model):
                             else:
                                 if y2 >= self.FMY:
                                     y2 -= self.FMY
+                                    
                             if (not self.periodic) and (x2 + self.N > self.FMX or y2 + self.N > self.FMY):
                                 continue
                             
@@ -313,19 +326,22 @@ class OverlappingModel(Model):
                             p = self.propogator[self.N - 1 - dx][self.N - 1 - dy]
                             
                             for t2 in range(0,self.T):
+                                #print("w2[t2]: {0}".format(w2[t2]))
                                 if (not w2[t2]):
                                     continue
                                 b = False
                                 prop = p[t2]
-                                for i1 in range(0, len(prop)):
-                                    if not b:
-                                        continue
+                                #print("prop: {0}".format(prop))
+                                i1 = 0
+                                while (i1 < len(prop)) and (True == b):
                                     b = w1[prop[i1]]
+                                    i1 += 1
                                     
-                                if not b:
+                                if False == b:
                                     self.changes[x2][y2] = True
                                     change = True
-                                    w2[t2] = True
+                                    w2[t2] = False
+        print(change)                                    
         return change
         
     def Graphics(self):
@@ -341,13 +357,16 @@ class OverlappingModel(Model):
                     if not (x < self.FMX - self.N + 1):
                         dx = self.N - 1
                     local_obsv = self.observed[x - dx][y - dy]
+                    print(local_obsv, end="")
                     local_patt = self.patterns[local_obsv][dx + dy * self.N]
                     c = self.colors[local_patt]
+                    #print(c, end="")
                     #bitmap_data[x + y * self.FMX] = (0xff000000 | (c.R << 16) | (c.G << 8) | c.B)
                     if isinstance(c, (int, float)):
                         bitmap_data[x + y * self.FMX] = (c, c, c)
                     else:
                         bitmap_data[x + y * self.FMX] = (c[0], c[1], c[2])
+                print("")
                     
         else:
             for y in range(0, self.FMY):
@@ -369,6 +388,7 @@ class OverlappingModel(Model):
                             for t in range(0, self.T):
                                 if self.wave[sx][sy][t]:
                                     contributors += 1
+                                    print(list(self.colors))
                                     color = self.colors[self.patterns[t][dx + dy * self.N]]
                                     if isinstance(color, (int, float)):
                                         r = int(color)
@@ -379,7 +399,10 @@ class OverlappingModel(Model):
                                         g += int(color[1])#.G
                                         b += int(color[2])#.B
                     #bitmap_data[x + y * self.FMX] = (0xff000000 | ((r / contributors) << 16) | ((g / contributors) << 8) | (b / contributors))
-                    bitmap_data[x + y * self.FMX] = (int(r / contributors), int(g / contributors), int(b / contributors))
+                    if contributors > 0:
+                        bitmap_data[x + y * self.FMX] = (int(r / contributors), int(g / contributors), int(b / contributors))
+                    else:
+                        bitmap_data[x + y * self.FMX] = (int(r), int(g), int(b))
         result.putdata(bitmap_data)
         return result
         
@@ -496,11 +519,11 @@ class Program:
             #print(xnode.attrib)
         
     
-prog = Program()    
-prog.Main()
+#prog = Program()    
+#prog.Main()
 
-#a_model = OverlappingModel(48, 48, "Chess", 2, True, False, 8,0)
-#finished = a_model.Run(46, 10)
-#test_img = a_model.Graphics()
+a_model = OverlappingModel(48, 48, "Chess", 3, True, False, 8,0)
+#a_model = OverlappingModel(48, 48, "Hogs", 3, True, True, 8,0)
+finished = a_model.Run(46, 0)
+test_img = a_model.Graphics()
 #test_img
-
