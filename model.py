@@ -21,9 +21,9 @@ class Model:
         
         self.rng = random.Random() #todo: set rng
 
-        self.wave = [[[None for _ in range(self.T)] for _ in range(self.FMY)] for _ in range(self.FMX)]
+        self.wave = [[[False for _ in range(self.T)] for _ in range(self.FMY)] for _ in range(self.FMX)]
         self.changes = [[False for _ in range(self.FMY)] for _ in range(self.FMX)]
-        self.observed = None#[[None]*self.FMY]*self.FMX
+        self.observed = None#[[0 for _ in range(self.FMY)] for _ in range(self.FMX)]
 
         self.log_prob = 0
         self.log_t = 0
@@ -73,7 +73,7 @@ class Model:
                         argminx = x
                         argminy = y
         if (-1 == argminx) and (-1 == argminy):
-            self.observed = [[None for _ in range(self.FMY)] for _ in range(self.FMX)]
+            self.observed = [[0 for _ in range(self.FMY)] for _ in range(self.FMX)]
             for x in range(0, self.FMX):
                 self.observed[x] = [None for _ in range(self.FMY)]
                 for y in range(0, self.FMY):
@@ -112,9 +112,9 @@ class Model:
                 return result
             pcount = 0
             while(self.Propogate()):
-                print(pcount)
+                #print(pcount)
                 pcount += 1
-                #print("Propogate: {0}".format(prop_val))
+                print("Propogate: {0}".format(pcount))
                 pass
         return True
             
@@ -293,6 +293,7 @@ class OverlappingModel(Model):
         return (not self.periodic) and ((x + self.N > self.FMX ) or (y + self.N > self.FMY))
     
     def Propogate(self):
+        print("Propogate")
         change = False
         b = False
         
@@ -341,32 +342,34 @@ class OverlappingModel(Model):
                                     self.changes[x2][y2] = True
                                     change = True
                                     w2[t2] = False
-        print(change)                                    
+        #print(change)                                    
         return change
         
     def Graphics(self):
         result = PIL.Image.new("RGB",(self.FMX, self.FMY),(0,0,0))
         bitmap_data = list(result.getdata())#[None] * (result.height * result.width)
+        
         if(self.observed != None):
             for y in range(0, self.FMY):
-                dy = 0
-                if not (y < self.FMY - self.N + 1):
-                    dy = self.N - 1
+                dy = self.N - 1
+                if (y < (self.FMY - self.N) + 1):
+                    dy = 0
                 for x in range(0, self.FMX):
                     dx = 0
                     if not (x < self.FMX - self.N + 1):
                         dx = self.N - 1
                     local_obsv = self.observed[x - dx][y - dy]
-                    print(local_obsv, end="")
+                    #print(local_obsv)
                     local_patt = self.patterns[local_obsv][dx + dy * self.N]
                     c = self.colors[local_patt]
+                    #print("{0} {1} {2} {3} ({4}, {5}) = {6}".format(x, y, dx, dy, x - dx, y - dy, local_patt))
                     #print(c, end="")
                     #bitmap_data[x + y * self.FMX] = (0xff000000 | (c.R << 16) | (c.G << 8) | c.B)
                     if isinstance(c, (int, float)):
                         bitmap_data[x + y * self.FMX] = (c, c, c)
                     else:
                         bitmap_data[x + y * self.FMX] = (c[0], c[1], c[2])
-                print("")
+                #print("")
                     
         else:
             for y in range(0, self.FMY):
@@ -402,6 +405,7 @@ class OverlappingModel(Model):
                     if contributors > 0:
                         bitmap_data[x + y * self.FMX] = (int(r / contributors), int(g / contributors), int(b / contributors))
                     else:
+                        print("WARNING: No contributors")
                         bitmap_data[x + y * self.FMX] = (int(r), int(g), int(b))
         result.putdata(bitmap_data)
         return result
@@ -522,7 +526,7 @@ class Program:
 #prog = Program()    
 #prog.Main()
 
-a_model = OverlappingModel(48, 48, "Chess", 3, True, False, 8,0)
+a_model = OverlappingModel(8, 8, "Chess", 2, True, False, 8,0)
 #a_model = OverlappingModel(48, 48, "Hogs", 3, True, True, 8,0)
 finished = a_model.Run(46, 0)
 test_img = a_model.Graphics()
