@@ -128,13 +128,13 @@ class Model:
             pcount = 0
             presult = True
             while(presult):
-                presult = self.Propogate()
-                #print("Propogate: {0}".format(pcount))
+                presult = self.Propagate()
+                #print("Propagate: {0}".format(pcount))
                 pcount += 1
         return True
             
         
-    def Propogate(self):
+    def Propagate(self):
         return False
         
     def Clear(self):
@@ -297,7 +297,7 @@ class OverlappingModel(Model):
     def OnBoundary(self, x, y):
         return (not self.periodic) and ((x + self.N > self.FMX ) or (y + self.N > self.FMY))
     
-    def Propogate(self):
+    def Propagate(self):
         change = False
         b = False
         
@@ -425,7 +425,7 @@ class OverlappingModel(Model):
                     for y in range(0, self.FMY - 1):
                         self.wave[x][y][self.ground] = False
                         self.changes[x][y] = True
-            while self.Propogate():
+            while self.Propagate():
                 pass
             
                         
