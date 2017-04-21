@@ -153,16 +153,16 @@ class Model:
         return True # Abstract, replaced in child classes
         
     def Graphics(self):
-        return PIL.Image.new("RGB",(self.FMX, self.FMY),(0,0,0))
+        return Image.new("RGB",(self.FMX, self.FMY),(0,0,0))
     
 class OverlappingModel(Model):
         
     def __init__(self, width, height, name, N_value = 2, periodic_input_value = True, periodic_output_value = False, symmetry_value = 8, ground_value = 0):
         super( OverlappingModel, self).__init__(width, height)
-        self.propogator = [[[[]]]]
+        self.propagator = [[[[]]]]
         self.N = N_value
         self.periodic = periodic_output_value
-        self.bitmap = PIL.Image.open("samples/{0}.png".format(name))
+        self.bitmap = Image.open("samples/{0}.png".format(name))
         self.SMX = self.bitmap.size[0]
         self.SMY = self.bitmap.size[1]
         self.sample = [[0 for _ in range(self.SMY)] for _ in range(self.SMX)]
@@ -254,7 +254,7 @@ class OverlappingModel(Model):
         
         self.patterns = [[None] for _ in range(self.T)]
         self.stationary = [None for _ in range(self.T)]
-        self.propogator = [[[[0]]] for _ in range(2 * self.N - 1)]
+        self.propagator = [[[[0]]] for _ in range(2 * self.N - 1)]
         
         counter = 0
         for w in ordering:
@@ -284,18 +284,18 @@ class OverlappingModel(Model):
             return True
 
         for x in range(0, 2 * self.N - 1):
-            self.propogator[x] = [[[0]] for _ in range(2 * self.N - 1)]
+            self.propagator[x] = [[[0]] for _ in range(2 * self.N - 1)]
             for y in range(0, 2 * self.N - 1):
-                self.propogator[x][y] = [[0] for _ in range(self.T)]
+                self.propagator[x][y] = [[0] for _ in range(self.T)]
                                   
                 for t in range(0, self.T):
                     a_list = []
                     for t2 in range(0, self.T):
                         if Agrees(self.patterns[t], self.patterns[t2], x - self.N + 1, y - self.N + 1):
                             a_list.append(t2)
-                    self.propogator[x][y][t] = [0 for _ in range(len(a_list))]
+                    self.propagator[x][y][t] = [0 for _ in range(len(a_list))]
                     for c in range(0, len(a_list)):
-                        self.propogator[x][y][t][c] = a_list[c]
+                        self.propagator[x][y][t][c] = a_list[c]
         return
                     
     def OnBoundary(self, x, y):
@@ -335,7 +335,7 @@ class OverlappingModel(Model):
                                 w1 = self.wave[x1][y1]
                                 w2 = self.wave[x2][y2]
                                 
-                                p = self.propogator[(self.N - 1) - dx][(self.N - 1) - dy]
+                                p = self.propagator[(self.N - 1) - dx][(self.N - 1) - dy]
                                 
                                 for t2 in range(0,self.T):
                                     if (not w2[t2]):
@@ -357,7 +357,7 @@ class OverlappingModel(Model):
         return change
         
     def Graphics(self):
-        result = PIL.Image.new("RGB",(self.FMX, self.FMY),(0,0,0))
+        result = Image.new("RGB",(self.FMX, self.FMY),(0,0,0))
         bitmap_data = list(result.getdata())
         if(self.observed != None):
             for y in range(0, self.FMY):
@@ -438,7 +438,7 @@ class OverlappingModel(Model):
 class SimpleTiledModel(Model):
     def __init__(self, width, height, name, subset_name, periodic_value, black_value):
         super( OverlappingModel, self).__init__(width, height)
-        self.propogator = [[[]]]
+        self.propagator = [[[]]]
         self.tiles = []
         self.tilenames = []
         self.tilesize = 0
