@@ -27,8 +27,11 @@ class Model:
 
         self.log_prob = 0
         self.log_t = math.log(self.T)
+        
+        self.observe_count = 0
 
     def Observe(self):
+        self.observe_count += 1
         observed_min = 1e+3
         observed_sum = 0
         main_sum = 0
@@ -110,7 +113,6 @@ class Model:
         l = 0
         while (l < limit) or (0 == limit): # if limit == 0, then don't stop
             l += 1
-            print("Observe")
             result = self.Observe()
             if None != result:
                 return result
@@ -118,10 +120,8 @@ class Model:
             presult = True
             while(presult):
                 presult = self.Propogate()
-                #print(pcount)
+                #print("Propogate: {0}".format(pcount))
                 pcount += 1
-                print("Propogate: {0}".format(pcount))
-                pass
         return True
             
         
@@ -167,7 +167,7 @@ class OverlappingModel(Model):
         self.W = StuffPower(self.color_count, self.N * self.N)
         
         self.patterns= [[]]
-        self.ground = 0
+        #self.ground = 0
         
         def FuncPattern(passed_func):
             result = [0 for _ in range(self.N * self.N)]
@@ -233,10 +233,11 @@ class OverlappingModel(Model):
                     ind = Index(ps[k])
                     indexed_weight = collections.Counter({ind : 1})
                     self.weights = self.weights + indexed_weight
-        ordering = list(self.weights.keys())
+                    if not ind in ordering:
+                        ordering.append(ind)
                         
         self.T = len(self.weights)
-        self.ground = (self.ground + self.T) % self.T
+        self.ground = int((ground_value + self.T) % self.T)
         
         self.patterns = [[None] for _ in range(self.T)]
         self.stationary = [None for _ in range(self.T)]
@@ -357,8 +358,6 @@ class OverlappingModel(Model):
                     local_obsv = self.observed[x - dx][y - dy]
                     local_patt = self.patterns[local_obsv][dx + dy * self.N]
                     c = self.colors[local_patt]
-                    #print("{0} {1} {2} {3} ({4}, {5}) = {6}".format(x, y, dx, dy, x - dx, y - dy, local_patt))
-                    #print(c, end="")
                     #bitmap_data[x + y * self.FMX] = (0xff000000 | (c.R << 16) | (c.G << 8) | c.B)
                     if isinstance(c, (int, float)):
                         bitmap_data[x + y * self.FMX] = (c, c, c)
@@ -407,11 +406,12 @@ class OverlappingModel(Model):
     def Clear(self):
         super(OverlappingModel, self).Clear()
         if(self.ground != 0 ):
+           
             for x in range(0, self.FMX):
                 for t in range(0, self.T):
                     if t != self.ground:
-                        self.wave[x][self.FMX - 1][t] = False
-                    self.changes[x][self.FMX - 1] = True
+                        self.wave[x][self.FMY - 1][t] = False
+                    self.changes[x][self.FMY - 1] = True
                     
                     for y in range(0, self.FMY - 1):
                         self.wave[x][y][self.ground] = False
@@ -489,18 +489,22 @@ class Program:
             a_model = None
             
             name = xnode.get('name', "NAME")
+            
+
+        
             print("< {0} ".format(name), end='')
             if "overlapping" == xnode.tag:
                 #print(xnode.attrib)
                 a_model = OverlappingModel(int(xnode.get('width', 48)), int(xnode.get('height', 48)), xnode.get('name', "NAME"), int(xnode.get('N', 2)), string2bool(xnode.get('periodicInput', True)), string2bool(xnode.get('periodic', False)), int(xnode.get('symmetry', 8)), int(xnode.get('ground',0)))
                 pass
-            else:
-                if "simpletiled" == xnode.tag:
+            elif "simpletiled" == xnode.tag:
                     print("> ", end="\n")
                     continue
-                else:
+            else:
                     continue
-            
+        
+        
+        
             for i in range(0, int(xnode.get("screenshots", 2))):
                 for k in range(0, 10):
                     print("> ", end="")
@@ -513,8 +517,6 @@ class Program:
                     else:
                         print("CONTRADICTION")
             counter += 1
-            #print(xnode)
-            #print(xnode.attrib)
         
     
 prog = Program()    
@@ -525,7 +527,7 @@ prog.Main()
 #gseed = random.Random()
 #finished = a_model.Run(364, 0)
 #if(finished):
-#    test_img = a_model.Graphics()
+    #test_img = a_model.Graphics()
 #else:
 #    print("CONTRADICTION")
 #test_img
