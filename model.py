@@ -10,10 +10,14 @@
 #
 
 import math
-import PIL
 import random
 import xml.etree.ElementTree as ET
 import collections
+
+try:
+    import Image
+except ImportError:
+    from PIL import Image
 
 class Model:
     def __init__(self, width, height):
