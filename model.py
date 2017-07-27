@@ -19,6 +19,9 @@ try:
 except ImportError:
     from PIL import Image
 
+hackstring = ""
+hackcount = 0
+    
 class Model:
     def __init__(self, width, height):
         #initialize
@@ -42,6 +45,8 @@ class Model:
         self.log_t = math.log(self.T)
         
         self.observe_count = 0
+        
+        self.count_prop_passes = 0
 
     def Observe(self):
         self.observe_count += 1
@@ -131,8 +136,14 @@ class Model:
                 return result
             pcount = 0
             presult = True
+            global hackcount
+
             while(presult):
                 presult = self.Propagate()
+                
+                self.Graphics().save("in_progress_{0}_{1}.png".format(hackstring, hackcount), format="PNG")
+                hackcount += 1
+
                 #print("Propagate: {0}".format(pcount))
                 pcount += 1
         return True
@@ -267,6 +278,7 @@ class OverlappingModel(Model):
                 self.wave[x][y] = [False for _ in range(self.T)]
                 
         def Agrees(p1, p2, dx, dy):
+            ifany = True
             xmin = dx
             xmax = self.N
             if dx < 0:
@@ -280,8 +292,11 @@ class OverlappingModel(Model):
             for y in range(ymin, ymax):
                 for x in range(xmin, xmax):
                     if p1[x + self.N * y] != p2[x - dx + self.N * (y - dy)]:
-                        return False
-            return True
+                        print(p1[x + self.N * y] != p2[x - dx + self.N * (y - dy)])
+                        ifany = False
+                        #return False
+            return ifany
+            #return True
 
         for x in range(0, 2 * self.N - 1):
             self.propagator[x] = [[[0]] for _ in range(2 * self.N - 1)]
@@ -343,6 +358,7 @@ class OverlappingModel(Model):
                                     else:
                                         b = False
                                         prop = p[t2]
+                                        #print("Prop: {0}".format(prop))
                                         i_one = 0
                                         while (i_one < len(prop)) and (False == b):
                                             b = w1[prop[i_one]]
@@ -502,6 +518,8 @@ class Program:
             a_model = None
             
             name = xnode.get('name', "NAME")
+            global hackstring 
+            hackstring = name
             
 
         
