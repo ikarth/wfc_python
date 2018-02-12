@@ -13,6 +13,7 @@ import math
 import random
 import xml.etree.ElementTree as ET
 import collections
+import uuid # used for tracking experiments
 
 try:
     import Image
@@ -158,6 +159,9 @@ class Model:
 class OverlappingModel(Model):
         
     def __init__(self, width, height, name, N_value = 2, periodic_input_value = True, periodic_output_value = False, symmetry_value = 8, ground_value = 0):
+        """
+        Initializes the model.
+        """
         super( OverlappingModel, self).__init__(width, height)
         self.propagator = [[[[]]]]
         self.N = N_value
@@ -165,8 +169,17 @@ class OverlappingModel(Model):
         self.bitmap = Image.open("samples/{0}.png".format(name))
         self.SMX = self.bitmap.size[0]
         self.SMY = self.bitmap.size[1]
+        
+        # .sample is an array of arrays that holds the index values for colors 
+        # as found in the source image
         self.sample = [[0 for _ in range(self.SMY)] for _ in range(self.SMX)]
+        # .colors is the list of colors that are found in the source image
         self.colors = []
+        
+        # This initializes the .sample array with the color index values.
+        # It loops over the pixels in the source bitmap, adds the color to the
+        # list of colors if it is new, and sets the .sample x,y value to the
+        # index of the color in the list of colors.
         for y in range(0, self.SMY):
             for x in range(0, self.SMX):
                 a_color = self.bitmap.getpixel((x, y))
@@ -176,12 +189,17 @@ class OverlappingModel(Model):
                 samp_result = [i for i,v in enumerate(self.colors) if v == a_color]
                 self.sample[x][y] = samp_result
                 
+        
         self.color_count = len(self.colors)
         self.W = StuffPower(self.color_count, self.N * self.N)
         
+        # The pattern matrix, as an array of arrays.
         self.patterns= [[]]
         #self.ground = 0
         
+        # A helper function to extract the neighboring cells from the sample
+        # matrix. Takes a function that translates (dx,dy) into a reference to 
+        # a cell in the matrix.
         def FuncPattern(passed_func):
             result = [0 for _ in range(self.N * self.N)]
             for y in range(0, self.N):
@@ -192,15 +210,28 @@ class OverlappingModel(Model):
         pattern_func = FuncPattern
             
         def PatternFromSample(x, y):
+            '''
+            Takes the sample and returns the pattern for that (x,y) location.
+            '''
             def innerPattern(dx, dy):
                 return self.sample[(x + dx) % self.SMX][(y + dy) % self.SMY]
             return pattern_func(innerPattern)
         def Rotate(p):
+            '''
+            Returns a rotated version of the pattern.
+            '''
             return FuncPattern(lambda x, y: p[self.N - 1 - y + x * self.N])
         def Reflect(p):
+            '''
+            Returns a reflected version of the pattern.
+            '''
             return FuncPattern(lambda x, y: p[self.N - 1 - x + y * self.N])
             
         def Index(p):
+            '''
+            Converts a color index into a powers-of-two representation for
+            bytewise storage.
+            '''
             result = 0
             power = 1
             for i in range(0, len(p)):
@@ -211,6 +242,9 @@ class OverlappingModel(Model):
                                     
             
         def PatternFromIndex(ind):
+            '''
+            Takes a pattern index and returns the pattern byte array.
+            '''
             residue = ind
             power = self.W
             result = [None for _ in range(self.N * self.N)]
@@ -226,6 +260,9 @@ class OverlappingModel(Model):
         self.weights = collections.Counter()
         ordering = []
         
+        # This chunk converts the sample to patterns.
+        # SMX and SMY are the sample size x and y.
+        # if periodic_input_value is true, the source image wraps around 
         ylimit = self.SMY - self.N + 1
         xlimit = self.SMX - self.N + 1
         if True == periodic_input_value:
@@ -525,7 +562,7 @@ class Program:
                     finished = a_model.Run(seed, int(xnode.get("limit", 0)))
                     if finished:
                         print("DONE")
-                        a_model.Graphics().save("{0} {1} {2}.png".format(counter, name, i), format="PNG")
+                        a_model.Graphics().save("{0}_{1}_{2}_{3}.png".format(counter, name, i, uuid.uuid4()), format="PNG")
                         break
                     else:
                         print("CONTRADICTION")
