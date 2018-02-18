@@ -13,6 +13,7 @@ import math
 import random
 import xml.etree.ElementTree as ET
 import collections
+import logging
 
 try:
     import Image
@@ -47,6 +48,8 @@ class Model:
         self.observe_count = 0
         
         self.count_prop_passes = 0
+        
+        self.SAVE_IN_PROGRESS = False
 
     def Observe(self):
         self.observe_count += 1
@@ -141,7 +144,8 @@ class Model:
             while(presult):
                 presult = self.Propagate()
                 
-                self.Graphics().save("in_progress_{0}_{1}.png".format(hackstring, hackcount), format="PNG")
+                if self.SAVE_IN_PROGRESS:
+                    self.Graphics().save("in_progress_{0}_{1}.png".format(hackstring, hackcount), format="PNG")
                 hackcount += 1
 
                 #print("Propagate: {0}".format(pcount))
@@ -193,6 +197,7 @@ class OverlappingModel(Model):
         self.patterns= [[]]
         #self.ground = 0
         
+
         def FuncPattern(passed_func):
             result = [0 for _ in range(self.N * self.N)]
             for y in range(0, self.N):
@@ -292,7 +297,7 @@ class OverlappingModel(Model):
             for y in range(ymin, ymax):
                 for x in range(xmin, xmax):
                     if p1[x + self.N * y] != p2[x - dx + self.N * (y - dy)]:
-                        print(p1[x + self.N * y] != p2[x - dx + self.N * (y - dy)])
+                        logging.debug(p1[x + self.N * y] != p2[x - dx + self.N * (y - dy)])
                         ifany = False
                         #return False
             return ifany
@@ -427,7 +432,7 @@ class OverlappingModel(Model):
                     if contributors > 0:
                         bitmap_data[x + y * self.FMX] = (int(r / contributors), int(g / contributors), int(b / contributors))
                     else:
-                        print("WARNING: No contributors")
+                        logging.info("INFO: No contributors")
                         bitmap_data[x + y * self.FMX] = (int(r), int(g), int(b))
         result.putdata(bitmap_data)
         return result
