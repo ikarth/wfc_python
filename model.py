@@ -14,6 +14,7 @@ import random
 import xml.etree.ElementTree as ET
 import collections
 import logging
+import uuid
 
 try:
     import Image
@@ -172,7 +173,7 @@ class Model:
     
 class OverlappingModel(Model):
         
-    def __init__(self, width, height, name, N_value = 2, periodic_input_value = True, periodic_output_value = False, symmetry_value = 8, ground_value = 0, additional_samples=[]):
+    def __init__(self, width, height, name, N_value = 2, periodic_input_value = True, periodic_output_value = False, symmetry_value = 8, ground_value = 0, additional_samples=[], additional_periodic=[]):
         super( OverlappingModel, self).__init__(width, height)
         self.propagator = [[[[]]]]
         self.N = N_value
@@ -188,6 +189,9 @@ class OverlappingModel(Model):
             self.SMXs.append(self.bitmaps[add_index].size[0])
             self.SMYs.append(self.bitmaps[add_index].size[1])
             self.samples.append([[0 for _ in range(self.SMYs[add_index])] for _ in range(self.SMXs[add_index])])
+        
+        
+               
         
         self.colors = []
         for samp_n in range(len(self.bitmaps)):
@@ -206,6 +210,12 @@ class OverlappingModel(Model):
         self.patterns= [[]]
         #self.ground = 0
         
+        # Additional samples can individually be marked as periodic/non-periodic
+        periodic_input_values = [periodic_input_value]
+        for _ in range(len(self.bitmaps)):
+            periodic_input_values.append(periodic_input_value)
+        for idx_peri, peri in enumerate(additional_periodic):
+             periodic_input_values[idx_peri + 1] = ((1 == peri) or ('T' == peri) or ('True' == peri))
         
 
         def FuncPattern(passed_func):
@@ -255,7 +265,7 @@ class OverlappingModel(Model):
         for samp_n in range(len(self.bitmaps)):
             ylimit = self.SMYs[samp_n] - self.N + 1
             xlimit = self.SMXs[samp_n] - self.N + 1
-            if True == periodic_input_value:
+            if True == periodic_input_values[samp_n]:
                 ylimit = self.SMYs[samp_n]
                 xlimit = self.SMXs[samp_n]
             for y in range (0, ylimit):
@@ -550,9 +560,14 @@ class Program:
                 add_samp = []
                 if "NONE" != add_samp_string:
                     add_samp = add_samp_string.split(':')
+                    
+                add_peri_string = xnode.get('additional_periodic', "NONE")
+                add_peri = []
+                if "NONE" != add_peri_string:
+                    add_samp = add_peri_string.split(':')
                 
                 
-                a_model = OverlappingModel(int(xnode.get('width', 48)), int(xnode.get('height', 48)), xnode.get('name', "NAME"), int(xnode.get('N', 2)), string2bool(xnode.get('periodicInput', True)), string2bool(xnode.get('periodic', False)), int(xnode.get('symmetry', 8)), int(xnode.get('ground',0)), additional_samples=add_samp)
+                a_model = OverlappingModel(int(xnode.get('width', 48)), int(xnode.get('height', 48)), xnode.get('name', "NAME"), int(xnode.get('N', 2)), string2bool(xnode.get('periodicInput', True)), string2bool(xnode.get('periodic', False)), int(xnode.get('symmetry', 8)), int(xnode.get('ground',0)), additional_samples=add_samp, additional_periodic=add_peri)
                 pass
             elif "simpletiled" == xnode.tag:
                     print("> ", end="\n")
@@ -569,7 +584,7 @@ class Program:
                     finished = a_model.Run(seed, int(xnode.get("limit", 0)))
                     if finished:
                         print("DONE")
-                        a_model.Graphics().save("{0} {1} {2}.png".format(counter, name, i), format="PNG")
+                        a_model.Graphics().save("{0}_{1}_{2}_{3}.png".format(counter, name, i, uuid.uuid4()), format="PNG")
                         break
                     else:
                         print("CONTRADICTION")
