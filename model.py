@@ -377,7 +377,7 @@ class OverlappingModel(Model):
                                   
         return change
         
-    def Graphics(self):
+    def Graphics(self, monochrome=False):
         result = Image.new("RGB",(self.FMX, self.FMY),(0,0,0))
         bitmap_data = list(result.getdata())
         if(self.observed != None):
@@ -393,8 +393,11 @@ class OverlappingModel(Model):
                     local_patt = self.patterns[local_obsv][dx + dy * self.N]
                     c = self.colors[local_patt]
                     #bitmap_data[x + y * self.FMX] = (0xff000000 | (c.R << 16) | (c.G << 8) | c.B)
-                    if isinstance(c, (int, float)):
-                        bitmap_data[x + y * self.FMX] = (c, c, c)
+                    if monochrome:                    
+                        if isinstance(c, (int, float)):
+                            bitmap_data[x + y * self.FMX] = (c, c, c)
+                        else:
+                            bitmap_data[x + y * self.FMX] = (c[0], c[1], c[2])
                     else:
                         bitmap_data[x + y * self.FMX] = (c[0], c[1], c[2])
                     
