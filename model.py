@@ -172,30 +172,40 @@ class Model:
     
 class OverlappingModel(Model):
         
-    def __init__(self, width, height, name, N_value = 2, periodic_input_value = True, periodic_output_value = False, symmetry_value = 8, ground_value = 0):
+    def __init__(self, width, height, name, N_value = 2, periodic_input_value = True, periodic_output_value = False, symmetry_value = 8, ground_value = 0, additional_samples=[]):
         super( OverlappingModel, self).__init__(width, height)
         self.propagator = [[[[]]]]
         self.N = N_value
         self.periodic = periodic_output_value
-        self.bitmap = Image.open("samples/{0}.png".format(name))
-        self.SMX = self.bitmap.size[0]
-        self.SMY = self.bitmap.size[1]
-        self.sample = [[0 for _ in range(self.SMY)] for _ in range(self.SMX)]
+        self.bitmaps = [Image.open("samples/{0}.png".format(name))]
+        self.SMXs = [self.bitmaps[0].size[0]]
+        self.SMYs = [self.bitmaps[0].size[1]]
+        self.samples = [[[0 for _ in range(self.SMYs[0])] for _ in range(self.SMXs[0])]]
+        
+        for additional in additional_samples:
+            self.bitmaps.append(Image.open("samples/{0}.png".format(additional)))
+            add_index = len(self.bitmaps)-1
+            self.SMXs.append(self.bitmaps[add_index].size[0])
+            self.SMYs.append(self.bitmaps[add_index].size[1])
+            self.samples.append([[0 for _ in range(self.SMYs[add_index])] for _ in range(self.SMXs[add_index])])
+        
         self.colors = []
-        for y in range(0, self.SMY):
-            for x in range(0, self.SMX):
-                a_color = self.bitmap.getpixel((x, y))
-                color_exists = [c for c in self.colors if c == a_color]
-                if len(color_exists) < 1:
-                    self.colors.append(a_color)
-                samp_result = [i for i,v in enumerate(self.colors) if v == a_color]
-                self.sample[x][y] = samp_result
+        for samp_n in range(len(self.bitmaps)):
+            for y in range(0, self.SMYs[samp_n]):
+                for x in range(0, self.SMXs[samp_n]):
+                    a_color = self.bitmaps[samp_n].getpixel((x, y))
+                    color_exists = [c for c in self.colors if c == a_color]
+                    if len(color_exists) < 1:
+                        self.colors.append(a_color)
+                    samp_result = [i for i,v in enumerate(self.colors) if v == a_color]
+                    self.samples[samp_n][x][y] = samp_result
                 
         self.color_count = len(self.colors)
         self.W = StuffPower(self.color_count, self.N * self.N)
         
         self.patterns= [[]]
         #self.ground = 0
+        
         
 
         def FuncPattern(passed_func):
@@ -207,9 +217,9 @@ class OverlappingModel(Model):
             
         pattern_func = FuncPattern
             
-        def PatternFromSample(x, y):
+        def PatternFromSample(x, y, n=0):
             def innerPattern(dx, dy):
-                return self.sample[(x + dx) % self.SMX][(y + dy) % self.SMY]
+                return self.samples[n][(x + dx) % self.SMXs[n]][(y + dy) % self.SMYs[n]]
             return pattern_func(innerPattern)
         def Rotate(p):
             return FuncPattern(lambda x, y: p[self.N - 1 - y + x * self.N])
@@ -242,28 +252,29 @@ class OverlappingModel(Model):
         self.weights = collections.Counter()
         ordering = []
         
-        ylimit = self.SMY - self.N + 1
-        xlimit = self.SMX - self.N + 1
-        if True == periodic_input_value:
-            ylimit = self.SMY
-            xlimit = self.SMX
-        for y in range (0, ylimit):
-            for x in range(0, xlimit):
-                ps = [0 for _ in range(8)]
-                ps[0] = PatternFromSample(x,y)
-                ps[1] = Reflect(ps[0])
-                ps[2] = Rotate(ps[0])
-                ps[3] = Reflect(ps[2])
-                ps[4] = Rotate(ps[2])
-                ps[5] = Reflect(ps[4])
-                ps[6] = Rotate(ps[4])
-                ps[7] = Reflect(ps[6])
-                for k in range(0,symmetry_value):
-                    ind = Index(ps[k])
-                    indexed_weight = collections.Counter({ind : 1})
-                    self.weights = self.weights + indexed_weight
-                    if not ind in ordering:
-                        ordering.append(ind)
+        for samp_n in range(len(self.bitmaps)):
+            ylimit = self.SMYs[samp_n] - self.N + 1
+            xlimit = self.SMXs[samp_n] - self.N + 1
+            if True == periodic_input_value:
+                ylimit = self.SMYs[samp_n]
+                xlimit = self.SMXs[samp_n]
+            for y in range (0, ylimit):
+                for x in range(0, xlimit):
+                    ps = [0 for _ in range(8)]
+                    ps[0] = PatternFromSample(x,y,samp_n)
+                    ps[1] = Reflect(ps[0])
+                    ps[2] = Rotate(ps[0])
+                    ps[3] = Reflect(ps[2])
+                    ps[4] = Rotate(ps[2])
+                    ps[5] = Reflect(ps[4])
+                    ps[6] = Rotate(ps[4])
+                    ps[7] = Reflect(ps[6])
+                    for k in range(0,symmetry_value):
+                        ind = Index(ps[k])
+                        indexed_weight = collections.Counter({ind : 1})
+                        self.weights = self.weights + indexed_weight
+                        if not ind in ordering:
+                            ordering.append(ind)
                         
         self.T = len(self.weights)
         self.ground = int((ground_value + self.T) % self.T)
@@ -534,7 +545,14 @@ class Program:
             print("< {0} ".format(name), end='')
             if "overlapping" == xnode.tag:
                 #print(xnode.attrib)
-                a_model = OverlappingModel(int(xnode.get('width', 48)), int(xnode.get('height', 48)), xnode.get('name', "NAME"), int(xnode.get('N', 2)), string2bool(xnode.get('periodicInput', True)), string2bool(xnode.get('periodic', False)), int(xnode.get('symmetry', 8)), int(xnode.get('ground',0)))
+                add_samp_string = xnode.get('additional', "NONE")
+                               
+                add_samp = []
+                if "NONE" != add_samp_string:
+                    add_samp = add_samp_string.split(':')
+                
+                
+                a_model = OverlappingModel(int(xnode.get('width', 48)), int(xnode.get('height', 48)), xnode.get('name', "NAME"), int(xnode.get('N', 2)), string2bool(xnode.get('periodicInput', True)), string2bool(xnode.get('periodic', False)), int(xnode.get('symmetry', 8)), int(xnode.get('ground',0)), additional_samples=add_samp)
                 pass
             elif "simpletiled" == xnode.tag:
                     print("> ", end="\n")
