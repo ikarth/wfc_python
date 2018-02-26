@@ -173,7 +173,10 @@ class Model:
     
 class OverlappingModel(Model):
         
-    def __init__(self, width, height, name, N_value = 2, periodic_input_value = True, periodic_output_value = False, symmetry_value = 8, ground_value = 0, additional_samples=[], additional_periodic=[]):
+    def __init__(self, width, height, name, N_value = 2, periodic_input_value = True, periodic_output_value = False, symmetry_value = 8, ground_value = 0):
+        """
+        Initializes the model.
+        """
         super( OverlappingModel, self).__init__(width, height)
         self.propagator = [[[[]]]]
         self.N = N_value
@@ -204,9 +207,11 @@ class OverlappingModel(Model):
                     samp_result = [i for i,v in enumerate(self.colors) if v == a_color]
                     self.samples[samp_n][x][y] = samp_result
                 
+        
         self.color_count = len(self.colors)
         self.W = StuffPower(self.color_count, self.N * self.N)
         
+        # The pattern matrix, as an array of arrays.
         self.patterns= [[]]
         #self.ground = 0
         
@@ -232,11 +237,21 @@ class OverlappingModel(Model):
                 return self.samples[n][(x + dx) % self.SMXs[n]][(y + dy) % self.SMYs[n]]
             return pattern_func(innerPattern)
         def Rotate(p):
+            '''
+            Returns a rotated version of the pattern.
+            '''
             return FuncPattern(lambda x, y: p[self.N - 1 - y + x * self.N])
         def Reflect(p):
+            '''
+            Returns a reflected version of the pattern.
+            '''
             return FuncPattern(lambda x, y: p[self.N - 1 - x + y * self.N])
             
         def Index(p):
+            '''
+            Converts a color index into a powers-of-two representation for
+            bytewise storage.
+            '''
             result = 0
             power = 1
             for i in range(0, len(p)):
@@ -247,6 +262,9 @@ class OverlappingModel(Model):
                                     
             
         def PatternFromIndex(ind):
+            '''
+            Takes a pattern index and returns the pattern byte power index.
+            '''
             residue = ind
             power = self.W
             result = [None for _ in range(self.N * self.N)]
