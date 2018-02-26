@@ -173,7 +173,7 @@ class Model:
     
 class OverlappingModel(Model):
         
-    def __init__(self, width, height, name, N_value = 2, periodic_input_value = True, periodic_output_value = False, symmetry_value = 8, ground_value = 0):
+    def __init__(self, width, height, name, N_value = 2, periodic_input_value = True, periodic_output_value = False, symmetry_value = 8, ground_value = 0, additional_samples=[], additional_periodic="", antipatterns=""):
         """
         Initializes the model.
         """
@@ -181,20 +181,39 @@ class OverlappingModel(Model):
         self.propagator = [[[[]]]]
         self.N = N_value
         self.periodic = periodic_output_value
-        self.bitmaps = [Image.open("samples/{0}.png".format(name))]
+        self.bitmaps = [Image.open("samples/{0}.png".format(name)).convert("RGBA")]
         self.SMXs = [self.bitmaps[0].size[0]]
         self.SMYs = [self.bitmaps[0].size[1]]
         self.samples = [[[0 for _ in range(self.SMYs[0])] for _ in range(self.SMXs[0])]]
         
+        self.antipattern_flags = [int(x) for x in list(antipatterns.ljust(len(additional_samples) + 1, '0'))]
+        print(self.antipattern_flags)
+        
+        add_periodic = 0
+        if periodic_input_value:
+            add_periodic = 1
+        self.periodic_flags = [add_periodic] + [int(x) for x in list(additional_periodic.ljust(len(additional_samples), str(add_periodic)))]
+        print(self.periodic_flags)
+
         for additional in additional_samples:
-            self.bitmaps.append(Image.open("samples/{0}.png".format(additional)))
+            self.bitmaps.append(Image.open("samples/{0}.png".format(additional)).convert("RGBA"))
             add_index = len(self.bitmaps)-1
             self.SMXs.append(self.bitmaps[add_index].size[0])
             self.SMYs.append(self.bitmaps[add_index].size[1])
             self.samples.append([[0 for _ in range(self.SMYs[add_index])] for _ in range(self.SMXs[add_index])])
         
-        
-               
+#        self.antibitmaps = []
+#        self.aSMXs = []
+#        self.aSMYs = []
+#        self.antisamples = []
+#        for anti in antipatterns:
+#            self.antibitmaps.append(Image.open("samples/{0}.png".format(anti)))
+#            add_index = len(self.antibitmaps)-1
+#            self.SMXs.append(self.antibitmaps[add_index].size[0])
+#            self.SMYs.append(self.antibitmaps[add_index].size[1])
+#            self.antisamples.append([[0 for _ in range(self.aSMYs[add_index])] for _ in range(self.aSMXs[add_index])])
+            
+            
         
         self.colors = []
         for samp_n in range(len(self.bitmaps)):
@@ -207,6 +226,8 @@ class OverlappingModel(Model):
                     samp_result = [i for i,v in enumerate(self.colors) if v == a_color]
                     self.samples[samp_n][x][y] = samp_result
                 
+        for c in self.colors:
+            print(c)
         
         self.color_count = len(self.colors)
         self.W = StuffPower(self.color_count, self.N * self.N)
@@ -216,11 +237,11 @@ class OverlappingModel(Model):
         #self.ground = 0
         
         # Additional samples can individually be marked as periodic/non-periodic
-        periodic_input_values = [periodic_input_value]
-        for _ in range(len(self.bitmaps)):
-            periodic_input_values.append(periodic_input_value)
-        for idx_peri, peri in enumerate(additional_periodic):
-             periodic_input_values[idx_peri + 1] = ((1 == peri) or ('T' == peri) or ('True' == peri))
+        #periodic_input_values = [periodic_input_value]
+        #for _ in range(len(self.bitmaps)):
+        #    periodic_input_values.append(periodic_input_value)
+        #for idx_peri, peri in enumerate(additional_periodic):
+        #     periodic_input_values[idx_peri + 1] = ((1 == peri) or ('T' == peri) or ('True' == peri))
         
 
         def FuncPattern(passed_func):
@@ -263,7 +284,7 @@ class OverlappingModel(Model):
             
         def PatternFromIndex(ind):
             '''
-            Takes a pattern index and returns the pattern byte power index.
+            Takes a pattern index and returns the pattern byte array.
             '''
             residue = ind
             power = self.W
@@ -279,11 +300,13 @@ class OverlappingModel(Model):
             
         self.weights = collections.Counter()
         ordering = []
+        antiordering = []
+        self.anti_adjacency = []
         
         for samp_n in range(len(self.bitmaps)):
             ylimit = self.SMYs[samp_n] - self.N + 1
             xlimit = self.SMXs[samp_n] - self.N + 1
-            if True == periodic_input_values[samp_n]:
+            if 1 == self.periodic_flags[samp_n]:
                 ylimit = self.SMYs[samp_n]
                 xlimit = self.SMXs[samp_n]
             for y in range (0, ylimit):
@@ -299,10 +322,14 @@ class OverlappingModel(Model):
                     ps[7] = Reflect(ps[6])
                     for k in range(0,symmetry_value):
                         ind = Index(ps[k])
+                        if 1 == self.antipattern_flags[samp_n]:
+                            if not ind in antiordering:
+                                antiordering.append(ind)
                         indexed_weight = collections.Counter({ind : 1})
                         self.weights = self.weights + indexed_weight
                         if not ind in ordering:
                             ordering.append(ind)
+                            
                         
         self.T = len(self.weights)
         self.ground = int((ground_value + self.T) % self.T)
@@ -311,16 +338,55 @@ class OverlappingModel(Model):
         self.stationary = [None for _ in range(self.T)]
         self.propagator = [[[[0]]] for _ in range(2 * self.N - 1)]
         
+        self.antipatterns = [[None] for _ in antiordering]
+        
+        for w in antiordering:
+            self.antipatterns.append(PatternFromIndex(w))
+        
         counter = 0
         for w in ordering:
             self.patterns[counter] = PatternFromIndex(w)
             self.stationary[counter] = self.weights[w]
             counter += 1
             
+        for samp_n in range(len(self.bitmaps)):
+            if 1 == self.antipattern_flags[samp_n]:
+                #print('sample #',samp_n)
+                ylimit = self.SMYs[samp_n] - self.N + 1
+                xlimit = self.SMXs[samp_n] - self.N + 1
+                if 1 == self.periodic_flags[samp_n]:
+                    ylimit = self.SMYs[samp_n]
+                    xlimit = self.SMXs[samp_n]
+                #print('limits',xlimit, ylimit, self.periodic_flags[samp_n])
+                for py in range (0, ylimit):
+                    for px in range(0, xlimit):
+                        pattern_one = PatternFromIndex(Index(PatternFromSample(px,py,samp_n)))
+                        #print('pattern_one', pattern_one)
+                        for tx in range(1 - self.N, self.N):
+                            for ty in range(1 - self.N,self.N):
+                                #print(tx,ty)
+                                if not (tx == 0 and ty == 0):
+                                    if (1 == self.periodic_flags[samp_n]) or ((px + tx >= 0) and (py + ty >= 0) and (px + tx < xlimit) and (py + ty < ylimit)):
+                                        pattern_two = PatternFromIndex(Index(PatternFromSample(px+tx,py+ty,samp_n)))
+                                        #print('pattern_two', pattern_two, px + tx, py + ty, tx, ty)
+                                        self.anti_adjacency.append((pattern_one, pattern_two, (tx, ty)))
+                                        print('create antipattern', (pattern_one, pattern_two, (tx, ty)))
+            
         for x in range(0, self.FMX):
             for y in range(0, self.FMY):
                 self.wave[x][y] = [False for _ in range(self.T)]
                 
+                
+        def Disallowed(p1, p2, dx, dy):
+            #print(p1,p2,'\n---\n')
+            for anti_adj in self.anti_adjacency:
+                #print(anti_adj)
+                if (anti_adj[0] == p1 and anti_adj[1] == p2):
+                    if dx == anti_adj[2][0] and dy == anti_adj[2][1]:
+                        #print('antipattern:',p1,p2,dx,dy,'\n',anti_adj,'\n')
+                        return True
+            return False
+            
         def Agrees(p1, p2, dx, dy):
             ifany = True
             xmin = dx
@@ -343,18 +409,19 @@ class OverlappingModel(Model):
             #return True
 
         for x in range(0, 2 * self.N - 1):
-            print('x',x)
+            #print('x',x)
             self.propagator[x] = [[[0]] for _ in range(2 * self.N - 1)]
             for y in range(0, 2 * self.N - 1):
-                print('y',y)
+                #print('y',y)
                 self.propagator[x][y] = [[0] for _ in range(self.T)]
                                   
                 for t in range(0, self.T):
-                    print('t',t)
+                    #print('t',t)
                     a_list = []
-                    print('pattern',self.patterns[t])
+                    #print('pattern',self.patterns[t])
                     for t2 in range(0, self.T):
-                        if not (((2 in self.patterns[t]) and (3 in self.patterns[t2])) or ((3 in self.patterns[t]) and (2 in self.patterns[t2]))):
+                        #if not (((2 in self.patterns[t]) and (3 in self.patterns[t2])) or ((3 in self.patterns[t]) and (2 in self.patterns[t2]))):
+                        if not Disallowed(self.patterns[t], self.patterns[t2], x - self.N + 1, y - self.N + 1):
                             if Agrees(self.patterns[t], self.patterns[t2], x - self.N + 1, y - self.N + 1):
                                 a_list.append(t2)
                     self.propagator[x][y][t] = [0 for _ in range(len(a_list))]
@@ -364,9 +431,10 @@ class OverlappingModel(Model):
         for x in self.propagator:
             for y in x:
                 for t in y:
-                    print('-----')
+                    #print('-----')
                     for c in t:
-                        print(c)
+                        #print(c)
+                        pass
         return
                     
     def OnBoundary(self, x, y):
@@ -591,13 +659,9 @@ class Program:
                 if "NONE" != add_samp_string:
                     add_samp = add_samp_string.split(':')
                     
-                add_peri_string = xnode.get('additional_periodic', "NONE")
-                add_peri = []
-                if "NONE" != add_peri_string:
-                    add_samp = add_peri_string.split(':')
-                
-                
-                a_model = OverlappingModel(int(xnode.get('width', 48)), int(xnode.get('height', 48)), xnode.get('name', "NAME"), int(xnode.get('N', 2)), string2bool(xnode.get('periodicInput', True)), string2bool(xnode.get('periodic', False)), int(xnode.get('symmetry', 8)), int(xnode.get('ground',0)), additional_samples=add_samp, additional_periodic=add_peri)
+                add_peri = xnode.get('additional_periodic', "")
+
+                a_model = OverlappingModel(int(xnode.get('width', 48)), int(xnode.get('height', 48)), xnode.get('name', "NAME"), int(xnode.get('N', 2)), string2bool(xnode.get('periodicInput', True)), string2bool(xnode.get('periodic', False)), int(xnode.get('symmetry', 8)), int(xnode.get('ground',0)), additional_samples=add_samp, additional_periodic=add_peri, antipatterns=xnode.get('antipatterns', '0'))
                 pass
             elif "simpletiled" == xnode.tag:
                     print("> ", end="\n")
