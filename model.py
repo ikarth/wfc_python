@@ -325,18 +325,30 @@ class OverlappingModel(Model):
             #return True
 
         for x in range(0, 2 * self.N - 1):
+            print('x',x)
             self.propagator[x] = [[[0]] for _ in range(2 * self.N - 1)]
             for y in range(0, 2 * self.N - 1):
+                print('y',y)
                 self.propagator[x][y] = [[0] for _ in range(self.T)]
                                   
                 for t in range(0, self.T):
+                    print('t',t)
                     a_list = []
+                    print('pattern',self.patterns[t])
                     for t2 in range(0, self.T):
-                        if Agrees(self.patterns[t], self.patterns[t2], x - self.N + 1, y - self.N + 1):
-                            a_list.append(t2)
+                        if not (((2 in self.patterns[t]) and (3 in self.patterns[t2])) or ((3 in self.patterns[t]) and (2 in self.patterns[t2]))):
+                            if Agrees(self.patterns[t], self.patterns[t2], x - self.N + 1, y - self.N + 1):
+                                a_list.append(t2)
                     self.propagator[x][y][t] = [0 for _ in range(len(a_list))]
                     for c in range(0, len(a_list)):
                         self.propagator[x][y][t][c] = a_list[c]
+                        
+        for x in self.propagator:
+            for y in x:
+                for t in y:
+                    print('-----')
+                    for c in t:
+                        print(c)
         return
                     
     def OnBoundary(self, x, y):
