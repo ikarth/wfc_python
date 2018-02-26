@@ -243,7 +243,7 @@ class OverlappingModel(Model):
             
         def PatternFromIndex(ind):
             '''
-            Takes a pattern index and returns the pattern byte array.
+            Takes a pattern index and returns the pattern byte power index.
             '''
             residue = ind
             power = self.W
@@ -280,19 +280,68 @@ class OverlappingModel(Model):
                 ps[6] = Rotate(ps[4])
                 ps[7] = Reflect(ps[6])
                 for k in range(0,symmetry_value):
+                    patimgdata = ps[k]
+                    patimgoutfile = Image.new("RGB",(self.N, self.N),(0,0,0))
+                    print('index',Index(ps[k]))
+                    print('ps[k]',ps[k])
+                    bitmap_data = list(patimgoutfile.getdata())
+                    for dy in range(0, self.N - 1):
+                        for dx in range(0, self.N - 1):
+                            
+                            local_patt = dx + dy * self.N
+                            print(local_patt)
+                            print('self.colors',self.colors)
+                            c = self.colors[local_patt]
+                            #bitmap_data[x + y * self.FMX] = (0xff000000 | (c.R << 16) | (c.G << 8) | c.B)
+                            if isinstance(c, (int, float)):
+                                bitmap_data[dx + dy * self.N] = (c, c, c)
+                            else:
+                                bitmap_data[dx + dy * self.N] = (c[0], c[1], c[2])
+                        
+                    patimgoutfile.putdata(bitmap_data)    
+                    patimgoutfile.save("pattern_{0}.png".format(uuid.uuid4()), format="PNG")
+                    
                     ind = Index(ps[k])
                     indexed_weight = collections.Counter({ind : 1})
                     self.weights = self.weights + indexed_weight
                     if not ind in ordering:
                         ordering.append(ind)
-                        
+        
+        
+            
+        
+        def PatternFromPattern(pattern):
+            return pattern
+
+            
+        def InventNewPatternCombinations():
+            for pat1 in ordering:
+                for pat2 in ordering:
+                    ps1 = PatternFromIndex(pat1)
+                    ps2 = PatternFromIndex(pat2)
+                    for x in range(0 - self.N, self.N):
+                        for y in range(0 - self.N, self.N):
+                            Agrees(ps1, ps2, x, y)
+                    #ind = Index(ps)
+                    #indexed_weight = collections.Counter({ind : 1})
+                    #self.weights = self.weights + indexed_weight
+                    #if not ind in ordering:
+                    #    ordering.append(ind)
+            
+        #InventNewPatternCombinations()
+        
+        # .T is the number of patterns (here derived from counting the recorded weights)                
         self.T = len(self.weights)
+        # if .ground isn't zero, set the bottom rows of the output to a fixed value 
         self.ground = int((ground_value + self.T) % self.T)
         
+        
+        # Here are the data structures for the patterns and propagation.
         self.patterns = [[None] for _ in range(self.T)]
         self.stationary = [None for _ in range(self.T)]
         self.propagator = [[[[0]]] for _ in range(2 * self.N - 1)]
         
+        # initialize the pattern data from the index
         counter = 0
         for w in ordering:
             self.patterns[counter] = PatternFromIndex(w)
@@ -304,6 +353,14 @@ class OverlappingModel(Model):
                 self.wave[x][y] = [False for _ in range(self.T)]
                 
         def Agrees(p1, p2, dx, dy):
+            '''
+            Compares an overlapping region of two offset patterns, returning
+            True if the overlaid pixels match and False otherwise.
+            p1, p2 - patterns in the form of a 1d N*N length array of pattern
+                     indexes.
+            dx, dy - the x,y offset
+            Returns: True or False
+            '''
             xmin = dx
             xmax = self.N
             if dx < 0:
