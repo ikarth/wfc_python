@@ -243,7 +243,7 @@ class OverlappingModel(Model):
             
         def PatternFromIndex(ind):
             '''
-            Takes a pattern index and returns the pattern byte array.
+            Takes a pattern index and returns the pattern byte power index.
             '''
             residue = ind
             power = self.W
