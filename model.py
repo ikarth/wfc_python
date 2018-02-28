@@ -23,6 +23,10 @@ except ImportError:
 
 hackstring = ""
 hackcount = 0
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
     
 class Model:
     def __init__(self, width, height):
@@ -322,6 +326,7 @@ class OverlappingModel(Model):
                     ps[7] = Reflect(ps[6])
                     for k in range(0,symmetry_value):
                         ind = Index(ps[k])
+                        logger.info('pattern: ' + str(ps[k]) + ' index ' + str(ind))
                         if 1 == self.antipattern_flags[samp_n]:
                             if not ind in antiordering:
                                 antiordering.append(ind)
@@ -330,9 +335,11 @@ class OverlappingModel(Model):
                         if not ind in ordering:
                             ordering.append(ind)
                             
-                        
+        for indo, o in enumerate(ordering):
+            print(indo, o, PatternFromIndex(o))                
         self.T = len(self.weights)
-        self.ground = int((ground_value + self.T) % self.T)
+        self.ground = (102,106)# int((ground_value + self.T) % self.T)
+        print('self.ground',self.ground)
         
         self.patterns = [[None] for _ in range(self.T)]
         self.stationary = [None for _ in range(self.T)]
@@ -361,7 +368,7 @@ class OverlappingModel(Model):
                 for py in range (0, ylimit):
                     for px in range(0, xlimit):
                         pattern_one = PatternFromIndex(Index(PatternFromSample(px,py,samp_n)))
-                        #print('pattern_one', pattern_one)
+                        print('pattern_one', pattern_one)
                         for tx in range(1 - self.N, self.N):
                             for ty in range(1 - self.N,self.N):
                                 #print(tx,ty)
@@ -370,7 +377,7 @@ class OverlappingModel(Model):
                                         pattern_two = PatternFromIndex(Index(PatternFromSample(px+tx,py+ty,samp_n)))
                                         #print('pattern_two', pattern_two, px + tx, py + ty, tx, ty)
                                         self.anti_adjacency.append((pattern_one, pattern_two, (tx, ty)))
-                                        print('create antipattern', (pattern_one, pattern_two, (tx, ty)))
+                                        #print('create antipattern', (pattern_one, pattern_two, (tx, ty)))
             
         for x in range(0, self.FMX):
             for y in range(0, self.FMY):
@@ -383,7 +390,7 @@ class OverlappingModel(Model):
                 #print(anti_adj)
                 if (anti_adj[0] == p1 and anti_adj[1] == p2):
                     if dx == anti_adj[2][0] and dy == anti_adj[2][1]:
-                        #print('antipattern:',p1,p2,dx,dy,'\n',anti_adj,'\n')
+                        print('antipattern:',p1,p2,dx,dy,'\n',anti_adj,'\n')
                         return True
             return False
             
@@ -402,7 +409,7 @@ class OverlappingModel(Model):
             for y in range(ymin, ymax):
                 for x in range(xmin, xmax):
                     if p1[x + self.N * y] != p2[x - dx + self.N * (y - dy)]:
-                        logging.debug(p1[x + self.N * y] != p2[x - dx + self.N * (y - dy)])
+                        logger.debug(p1[x + self.N * y] != p2[x - dx + self.N * (y - dy)])
                         ifany = False
                         #return False
             return ifany
@@ -554,7 +561,7 @@ class OverlappingModel(Model):
                     if contributors > 0:
                         bitmap_data[x + y * self.FMX] = (int(r / contributors), int(g / contributors), int(b / contributors))
                     else:
-                        logging.info("INFO: No contributors")
+                        logger.info("INFO: No contributors")
                         bitmap_data[x + y * self.FMX] = (int(r), int(g), int(b))
         result.putdata(bitmap_data)
         return result
@@ -565,12 +572,14 @@ class OverlappingModel(Model):
            
             for x in range(0, self.FMX):
                 for t in range(0, self.T):
-                    if t != self.ground:
+                    #print('clear?',x,t,(t != self.ground),self.wave[x][self.FMY - 1][t],self.changes[x][self.FMY - 1], self.FMY - 1)
+                    if not (t in self.ground):
                         self.wave[x][self.FMY - 1][t] = False
                     self.changes[x][self.FMY - 1] = True
                     
                     for y in range(0, self.FMY - 1):
-                        self.wave[x][y][self.ground] = False
+                        for g in range(self.ground[0], self.ground[1]):
+                            self.wave[x][y][g] = False
                         self.changes[x][y] = True
             while self.Propagate():
                 pass

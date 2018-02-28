@@ -1,3 +1,4 @@
 <samples>
-	<overlapping name="Red Maze" N="2" width="64" height="64" additional="Yellow Maze:Yellow Maze:test_antipattern3:test_antipattern5:test_antipattern6:test_antipattern7:test_antipattern8:test_antipattern9:test_antipattern10" additional_periodic="110000000" antipatterns="0001111111"/>
+
+	<overlapping name="Flowers" N="3" width="128" height="32"  symmetry="2" ground="-4" periodic="True" additional="red_flowers:blue_flowers9:blue_flowers9_anti1" additional_periodic="110" antipatterns="0001" />	
 </samples>
