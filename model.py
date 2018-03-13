@@ -9,6 +9,8 @@
 # The software is provided "as is", without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose and noninfringement. In no event shall the authors or copyright holders be liable for any claim, damages or other liability, whether in an action of contract, tort or otherwise, arising from, out of or in connection with the software or the use or other dealings in the software.
 #
 
+import common
+
 import math
 import random
 
@@ -115,7 +117,7 @@ class Model:
         distribution = [0 for _ in range(0,self.T)]
         for t in range(0,self.T):
             distribution[t] = self.stationary[t] if self.wave[argminx][argminy][t] else 0
-        r = StuffRandom(distribution, self.rng.random())
+        r = common.StuffRandom(distribution, self.rng.random())
         for t in range(0,self.T):
             self.wave[argminx][argminy][t] = (t == r)
         self.changes[argminx][argminy] = True
