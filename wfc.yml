@@ -1,0 +1,117 @@
+name: wfc
+channels:
+- anaconda-fusion
+- defaults
+dependencies:
+- alabaster=0.7.10=py36hcd07829_0
+- asn1crypto=0.24.0=py36_0
+- astroid=1.6.0=py36_0
+- babel=2.5.3=py36_0
+- bleach=2.1.2=py36_0
+- ca-certificates=2017.08.26=h94faf87_0
+- certifi=2018.1.18=py36_0
+- cffi=1.11.4=py36hfa6e2cd_0
+- chardet=3.0.4=py36h420ce6e_1
+- cloudpickle=0.5.2=py36h6b1d831_0
+- colorama=0.3.9=py36h029ae33_0
+- cryptography=2.1.4=py36he1d7878_0
+- decorator=4.2.1=py36_0
+- docutils=0.14=py36h6012d8f_0
+- entrypoints=0.2.3=py36hfd66bb0_2
+- freetype=2.8=h51f8f2c_1
+- html5lib=1.0.1=py36h047fa9f_0
+- icc_rt=2017.0.4=h97af966_0
+- icu=58.2=ha66f8fd_1
+- idna=2.6=py36h148d497_1
+- imagesize=0.7.1=py36he29f638_0
+- intel-openmp=2018.0.0=hd92c6cd_8
+- ipykernel=4.8.0=py36_0
+- ipython=6.2.1=py36h9cf0123_1
+- ipython_genutils=0.2.0=py36h3c5d0ee_0
+- isort=4.2.15=py36h6198cc5_0
+- jedi=0.11.1=py36_0
+- jinja2=2.10=py36h292fed1_0
+- jpeg=9b=hb83a4c4_2
+- jsonschema=2.6.0=py36h7636477_0
+- jupyter_client=5.2.2=py36_0
+- jupyter_core=4.4.0=py36h56e9d50_0
+- lazy-object-proxy=1.3.1=py36hd1c21d2_0
+- libpng=1.6.34=h79bbb47_0
+- libtiff=4.0.9=h0f13578_0
+- markupsafe=1.0=py36h0e26971_1
+- mccabe=0.6.1=py36hb41005a_1
+- mistune=0.8.3=py36_0
+- mkl=2018.0.1=h2108138_4
+- nbconvert=5.3.1=py36h8dc0fde_0
+- nbformat=4.4.0=py36h3a5bc1b_0
+- numpy=1.14.1=py36hb69e940_2
+- numpydoc=0.7.0=py36ha25429e_0
+- olefile=0.44=py36h0a7bdd2_0
+- openssl=1.0.2n=h74b6da3_0
+- pandoc=1.19.2.1=hb2460c7_1
+- pandocfilters=1.4.2=py36h3ef6317_1
+- parso=0.1.1=py36hae3edee_0
+- pickleshare=0.7.4=py36h9de030f_0
+- pillow=5.0.0=py36h0738816_0
+- pip=9.0.1=py36h226ae91_4
+- prompt_toolkit=1.0.15=py36h60b8f86_0
+- psutil=5.4.3=py36hfa6e2cd_0
+- pycodestyle=2.3.1=py36h7cc55cd_0
+- pycparser=2.18=py36hd053e01_1
+- pyflakes=1.6.0=py36h0b975d6_0
+- pygments=2.2.0=py36hb010967_0
+- pylint=1.8.1=py36_0
+- pyopenssl=17.5.0=py36h5b7d817_0
+- pyqt=5.6.0=py36hb5ed885_5
+- pysocks=1.6.7=py36h698d350_1
+- python=3.6.4=h6538335_1
+- python-dateutil=2.6.1=py36h509ddcb_1
+- pytz=2017.3=py36h1d3fa6b_0
+- pyzmq=16.0.3=py36he714bf5_0
+- qt=5.6.2=vc14h6f8c307_12
+- qtawesome=0.4.4=py36h5aa48f6_0
+- qtconsole=4.3.1=py36h99a29a9_0
+- qtpy=1.3.1=py36hb8717c5_0
+- requests=2.18.4=py36h4371aae_1
+- rope=0.10.7=py36had63a69_0
+- scikit-learn=0.19.1=py36h53aea1b_0
+- scipy=1.0.0=py36h1260518_0
+- setuptools=38.4.0=py36_0
+- simplegeneric=0.8.1=py36heab741f_0
+- sip=4.18.1=py36h9c25514_2
+- six=1.11.0=py36h4db2310_1
+- snowballstemmer=1.2.1=py36h763602f_0
+- sphinx=1.6.6=py36_0
+- sphinxcontrib=1.0=py36hbbac3d2_1
+- sphinxcontrib-websupport=1.0.1=py36hb5e5916_1
+- spyder=3.2.6=py36_0
+- sqlite=3.21.0=h9d3ae62_2
+- testpath=0.3.1=py36h2698cfe_0
+- tk=8.6.7=hcb92d03_3
+- tornado=4.5.3=py36_0
+- traitlets=4.3.2=py36h096827d_0
+- typing=3.6.2=py36hb035bda_0
+- urllib3=1.22=py36h276f60a_0
+- vc=14=h0510ff6_3
+- vs2015_runtime=14.0.25123=3
+- wcwidth=0.1.7=py36h3d5aa90_0
+- webencodings=0.5.1=py36h67c50ae_1
+- wheel=0.30.0=py36h6c3ec14_1
+- win_inet_pton=1.0.1=py36he67d7fd_1
+- wincertstore=0.2=py36h7fe50ca_0
+- wrapt=1.10.11=py36he5f5981_0
+- zlib=1.2.11=h8395fce_2
+- pip:
+  - appdirs==1.4.3
+  - exifread==2.1.2
+  - imagehash==4.0
+  - ipython-genutils==0.2.0
+  - jupyter-client==5.2.2
+  - jupyter-core==4.4.0
+  - prompt-toolkit==1.0.15
+  - pymzn==0.16.5
+  - pywavelets==0.5.2
+  - pyyaml==3.12
+  - win-inet-pton==1.0.1
+prefix: C:\Software\Anaconda3\envs\wfc
+
