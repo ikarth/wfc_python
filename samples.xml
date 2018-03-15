@@ -1,4 +1,6 @@
 <samples>
-
-	<overlapping name="Flowers" N="3" width="128" height="32"  symmetry="2" ground="-4" periodic="True" additional="red_flowers:blue_flowers9:blue_flowers9_anti1" additional_periodic="110" antipatterns="0001" />	
+   <learning name="Chess" N="2" periodic="True"/>
+	<learning name="Chess" N="2" width="47" height="47" periodic="True" screenshots="3"/>
+   <learning name="Red Maze" N="2" width="32" height="32"/>
+   <learning name="Flowers" N="3" width="32" height="32"  symmetry="2" ground="102" ground_end="106" periodic="True" additional="red_flowers:blue_flowers9:blue_flowers9_anti1" additional_periodic="110" antipatterns="0001" />	
 </samples>

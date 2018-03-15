@@ -49,7 +49,7 @@ class Model:
         
         self.count_prop_passes = 0
         
-        self.SAVE_IN_PROGRESS = False
+        self.SAVE_IN_PROGRESS = True
 
     def Observe(self):
         self.observe_count += 1
@@ -100,10 +100,14 @@ class Model:
                         observed_min = entropy + noise
                         argminx = x
                         argminy = y
-                    
+        def TrueIndex(cont):
+            return [idx for idx, i in enumerate(cont) if i]
+            
         # No minimum entropy, so mark everything as being observed...
         if (-1 == argminx) and (-1 == argminy):
             self.observed = [[0 for _ in range(self.FMY)] for _ in range(self.FMX)]
+            print('self.wave',[[TrueIndex(y) for y in x] for x in self.wave])
+            
             for x in range(0, self.FMX):
                 self.observed[x] = [0 for _ in range(self.FMY)]
                 for y in range(0, self.FMY):
@@ -111,6 +115,7 @@ class Model:
                         if self.wave[x][y][t]:
                             self.observed[x][y] = t
                             break
+            print('self.observed', self.observed)
             return True
         
         # A minimum point has been found, so prep it for propogation...

@@ -1,0 +1,5 @@
+<samples>
+   <learning name="Chess"    N="2" width="48" height="48" screenshots="1" periodic="True"/>
+   <learning name="Red Maze" N="2" width="48" height="48" screenshots="1" periodic="True"/>
+
+</samples>

@@ -1,0 +1,11 @@
+<samples>
+	<overlapping name="Chess" N="2" periodic="True"/>
+	<overlapping name="Chess" N="2" width="47" height="47" periodic="True" screenshots="1"/>
+    <overlapping name="Red Maze" N="2" width="8" height="8"/>
+    <overlapping name="test_zebes1" N="2"  width="16" height="16"/>
+    <overlapping name="test_zebes1" N="2"/>
+    <overlapping name="test_zebes1" N="2"/>
+    <overlapping name="test_zebes1" N="2"/>
+    <overlapping name="test_zebes1" N="3"/>
+    <overlapping name="test_zebes1" N="4"/>
+</samples>

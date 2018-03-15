@@ -17,14 +17,21 @@ try:
 except ImportError:
     from PIL import Image
 
-class OverlappingModel(model.Model):
+class LearningModel(model.Model):
         
     def __init__(self, width, height, name, N_value = 2, periodic_input_value = True, periodic_output_value = False, symmetry_value = 8, ground_value = 0, ground_end = 0, additional_samples=[], additional_periodic="", antipatterns=""):
         """
         Initializes the model.
         """
-        super( OverlappingModel, self).__init__(width, height)
-        self.propagator = [[[[]]]]
+        super(LearningModel, self).__init__(width, height)
+        self.propagator =  [[[[]]]]
+        self.whitelist =   [[[[]]]]
+        self.blacklist =   [[[[]]]]
+        self.possiblelist =   [[[[]]]]
+        self.allowedlist = [[[[]]]]
+        self.disallowedlist = [[[[]]]]
+        self.observedlist= [[[[]]]]
+        
         self.N = N_value
         self.periodic = periodic_output_value
         self.bitmaps = [Image.open("samples/{0}.png".format(name)).convert("RGBA")]
@@ -33,13 +40,13 @@ class OverlappingModel(model.Model):
         self.samples = [[[0 for _ in range(self.SMYs[0])] for _ in range(self.SMXs[0])]]
         
         self.antipattern_flags = [int(x) for x in list(antipatterns.ljust(len(additional_samples) + 1, '0'))]
-        print(self.antipattern_flags)
+        #print(self.antipattern_flags)
         
         add_periodic = 0
         if periodic_input_value:
             add_periodic = 1
         self.periodic_flags = [add_periodic] + [int(x) for x in list(additional_periodic.ljust(len(additional_samples), str(add_periodic)))]
-        print(self.periodic_flags)
+        #print(self.periodic_flags)
 
         for additional in additional_samples:
             self.bitmaps.append(Image.open("samples/{0}.png".format(additional)).convert("RGBA"))
@@ -72,8 +79,8 @@ class OverlappingModel(model.Model):
                     samp_result = [i for i,v in enumerate(self.colors) if v == a_color]
                     self.samples[samp_n][x][y] = samp_result
                 
-        for c in self.colors:
-            print(c)
+        #for c in self.colors:
+        #    print(c)
         
         self.color_count = len(self.colors)
         self.W = common.StuffPower(self.color_count, self.N * self.N)
@@ -177,17 +184,23 @@ class OverlappingModel(model.Model):
                         if not ind in ordering:
                             ordering.append(ind)
                             
-        for indo, o in enumerate(ordering):
-            print(indo, o, PatternFromIndex(o))                
+        #for indo, o in enumerate(ordering):
+        #    print(indo, o, PatternFromIndex(o))                
         self.T = len(self.weights)
         self.ground = (int((ground_value + self.T) % self.T), int((ground_value + self.T) % self.T))#(102,106)# int((ground_value + self.T) % self.T)
         if ground_end > 0 and None != ground_end:
             self.gound = (ground_value, ground_end)
-        print('self.ground',self.ground)
+        #print('self.ground',self.ground)
         
         self.patterns = [[None] for _ in range(self.T)]
         self.stationary = [None for _ in range(self.T)]
         self.propagator = [[[[0]]] for _ in range(2 * self.N - 1)]
+        self.whitelist =  [[[[0]]] for _ in range(2 * self.N - 1)]
+        self.blacklist =  [[[[0]]] for _ in range(2 * self.N - 1)]
+        self.possiblelist = [[[[0]]] for _ in range(2 * self.N - 1)]
+        self.allowedlist = [[[[0]]] for _ in range(2 * self.N - 1)]
+        self.disallowedlist = [[[[0]]] for _ in range(2 * self.N - 1)]
+        self.observedlist = [[[[0]]] for _ in range(2 * self.N - 1)]
         
         self.antipatterns = [[None] for _ in antiordering]
         
@@ -199,7 +212,9 @@ class OverlappingModel(model.Model):
             self.patterns[counter] = PatternFromIndex(w)
             self.stationary[counter] = self.weights[w]
             counter += 1
-            
+        
+        
+        
         for samp_n in range(len(self.bitmaps)):
             if 1 == self.antipattern_flags[samp_n]:
                 #print('sample #',samp_n)
@@ -212,7 +227,7 @@ class OverlappingModel(model.Model):
                 for py in range (0, ylimit):
                     for px in range(0, xlimit):
                         pattern_one = PatternFromIndex(Index(PatternFromSample(px,py,samp_n)))
-                        print('pattern_one', pattern_one)
+                        #print('pattern_one', pattern_one)
                         for tx in range(1 - self.N, self.N):
                             for ty in range(1 - self.N,self.N):
                                 #print(tx,ty)
@@ -234,7 +249,7 @@ class OverlappingModel(model.Model):
                 #print(anti_adj)
                 if (anti_adj[0] == p1 and anti_adj[1] == p2):
                     if dx == anti_adj[2][0] and dy == anti_adj[2][1]:
-                        print('antipattern:',p1,p2,dx,dy,'\n',anti_adj,'\n')
+                        #print('antipattern:',p1,p2,dx,dy,'\n',anti_adj,'\n')
                         return True
             return False
             
@@ -259,34 +274,99 @@ class OverlappingModel(model.Model):
             return ifany
             #return True
 
+        # create total whitelist
         for x in range(0, 2 * self.N - 1):
-            #print('x',x)
-            self.propagator[x] = [[[0]] for _ in range(2 * self.N - 1)]
+            self.possiblelist[x] = [[[0]] for _ in range(2 * self.N - 1)]
             for y in range(0, 2 * self.N - 1):
-                #print('y',y)
-                self.propagator[x][y] = [[0] for _ in range(self.T)]
+                self.possiblelist[x][y] = [[0] for _ in range(self.T)]
+                for t in range(0, self.T):
+                    a_list = []
+                    for t2 in range(0, self.T):
+                            a_list.append(t2)
+                    self.possiblelist[x][y][t] = [0 for _ in range(len(a_list))]
+                    for c in range(0, len(a_list)):
+                        self.possiblelist[x][y][t][c] = a_list[c]
+        
+        
+                        
+        for x in range(0, 2 * self.N - 1):
+            self.observedlist[x] = [[[0]] for _ in range(2 * self.N - 1)]
+            self.allowedlist[x] = [[[0]] for _ in range(2 * self.N - 1)]
+            self.disallowedlist[x] = [[[0]] for _ in range(2 * self.N - 1)]
+            for y in range(0, 2 * self.N - 1):
+                self.observedlist[x][y] = [[0] for _ in range(self.T)]
+                self.allowedlist[x][y] = [[0] for _ in range(self.T)]
+                self.disallowedlist[x][y] = [[0] for _ in range(self.T)]
                                   
                 for t in range(0, self.T):
-                    #print('t',t)
+                    o_list = []
                     a_list = []
-                    #print('pattern',self.patterns[t])
+                    d_list = []
                     for t2 in range(0, self.T):
-                        #if not (((2 in self.patterns[t]) and (3 in self.patterns[t2])) or ((3 in self.patterns[t]) and (2 in self.patterns[t2]))):
                         if not Disallowed(self.patterns[t], self.patterns[t2], x - self.N + 1, y - self.N + 1):
                             if Agrees(self.patterns[t], self.patterns[t2], x - self.N + 1, y - self.N + 1):
                                 a_list.append(t2)
-                    self.propagator[x][y][t] = [0 for _ in range(len(a_list))]
+                                o_list.append(t2)
+                        else:
+                            d_list.append(t2)
+                            if Agrees(self.patterns[t], self.patterns[t2], x - self.N + 1, y - self.N + 1):
+                                a_list.append(t2)
+                    self.observedlist[x][y][t] = [0 for _ in range(len(o_list))]
+                    for c in range(0, len(o_list)):
+                        self.observedlist[x][y][t][c] = o_list[c]
+                    self.allowedlist[x][y][t] = [0 for _ in range(len(a_list))]
                     for c in range(0, len(a_list)):
-                        self.propagator[x][y][t][c] = a_list[c]
+                        self.allowedlist[x][y][t][c] = a_list[c]
+                    self.disallowedlist[x][y][t] = [0 for _ in range(len(d_list))]
+                    for c in range(0, len(d_list)):
+                        self.disallowedlist[x][y][t][c] = d_list[c]
                         
-        for x in self.propagator:
-            for y in x:
-                for t in y:
-                    #print('-----')
-                    for c in t:
-                        #print(c)
-                        pass
+        self.propagator = self.observedlist.copy()
+        #print(self.FlattenPropagator(self.observedlist))
+        self.propagator = self.UnflattenPropagator(self.FlattenPropagator(self.observedlist)).copy()
+#        print()
+#        for ix, x in enumerate(self.propagator):
+#            for iy, y in enumerate(x):
+#                for it, t in enumerate(y):
+#                    print(ix, ',', iy, ':', it, '>>', t)
+        
         return
+    
+    def FlattenPropagator(self, prop):
+        def Dehydrate(node):
+            return '{}_{}_{}'.format(node[0], node[1], node[2])
+        flatprop = []
+        for x in range(0, 2 * self.N - 1):
+            for y in range(0, 2 * self.N - 1):
+                for t in range(0, self.T):
+                    for t2 in prop[x][y][t]:
+                        flatprop.append([Dehydrate([t, x, y]), t2])
+        prop_dict = collections.defaultdict(list)
+        for x in flatprop:
+            prop_dict[x[0]].append(x[1])
+
+        return prop_dict.copy()
+    
+    def UnflattenPropagator(self, prop_dict):
+        prop = []
+        for d in prop_dict:
+            for p in prop_dict[d]:
+                prop.append([d, p])
+        hydratedlist = [[[[0]]] for _ in range(2 * self.N - 1)]
+        for x in range(0, 2 * self.N - 1):
+            hydratedlist[x] = [[[0]] for _ in range(2 * self.N - 1)]
+            for y in range(0, 2 * self.N - 1):
+                hydratedlist[x][y] = [[0] for _ in range(self.T)]
+                for t in range(0, self.T):
+                    hydratedlist[x][y][t] = []
+        def Rehydrate(node):
+            return [int(x) for x in node.split('_')]
+        for p in prop:
+            t, x, y = Rehydrate(p[0])
+            hydratedlist[x][y][t].append(p[1])
+            
+
+        return hydratedlist
                     
     def OnBoundary(self, x, y):
         return (not self.periodic) and ((x + self.N > self.FMX ) or (y + self.N > self.FMY))
@@ -347,10 +427,12 @@ class OverlappingModel(model.Model):
                                   
         return change
         
-    def Graphics(self, monochrome=False):
+    def Graphics(self, monochrome=True):
         result = Image.new("RGB",(self.FMX, self.FMY),(0,0,0))
         bitmap_data = list(result.getdata())
         if(self.observed != None):
+            print(self.observed)
+            print(self.patterns)
             for y in range(0, self.FMY):
                 dy = self.N - 1
                 if (y < (self.FMY - self.N + 1)):
@@ -362,12 +444,9 @@ class OverlappingModel(model.Model):
                     local_obsv = self.observed[x - dx][y - dy]
                     local_patt = self.patterns[local_obsv][dx + dy * self.N]
                     c = self.colors[local_patt]
-                    #bitmap_data[x + y * self.FMX] = (0xff000000 | (c.R << 16) | (c.G << 8) | c.B)
-                    if monochrome:                    
-                        if isinstance(c, (int, float)):
-                            bitmap_data[x + y * self.FMX] = (c, c, c)
-                        else:
-                            bitmap_data[x + y * self.FMX] = (c[0], c[1], c[2])
+                    #bitmap_data[x + y * self.FMX] = (0xff000000 | (c.R << 16) | (c.G << 8) | c.B)               
+                    if isinstance(c, (int, float)):
+                        bitmap_data[x + y * self.FMX] = (c, c, c)
                     else:
                         bitmap_data[x + y * self.FMX] = (c[0], c[1], c[2])
                     
@@ -411,7 +490,7 @@ class OverlappingModel(model.Model):
         return result
         
     def Clear(self):
-        super(OverlappingModel, self).Clear()
+        super(LearningModel, self).Clear()
         if(self.ground != (0,0) ):
            
             for x in range(0, self.FMX):
@@ -423,6 +502,11 @@ class OverlappingModel(model.Model):
                     
                     for y in range(0, self.FMY - 1):
                         for g in range(self.ground[0], self.ground[1]):
+                            print(self.wave)
+                            print(self.wave[x])
+                            print(self.wave[x][y])
+                            print(x,y,g)
+                            print(self.wave[x][y][g])
                             self.wave[x][y][g] = False
                         self.changes[x][y] = True
             while self.Propagate():
